@@ -2,3 +2,37 @@ url: https://nikita-jaya.github.io/disasterMaps/
 template:
   bootstrap: 5
 
+reference:
+- title: Data Cleaning
+  contents:
+  - clean_numeric
+  - aggregate_csvs
+  - analyze_dataset
+  - load_population
+  - load_movement
+  - build_moved
+  - fit_zoom
+  - build_tiles
+  - format_time
+  - compute_windows
+
+- title: Plot Functions
+  contents:
+  - shared_limits
+  - population_plot
+  - population_plot_n_difference
+  - population_plot_n_crisis
+
+- title: Earthquake Functions
+  contents:
+  - fetch_earthquakes
+  - disaster_limits
+
+- title: Fire Functions
+  contents:
+  - fetch_fires
+
+- title: Animations
+  contents:
+  - population_plot_animate
+
