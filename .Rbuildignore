@@ -2,3 +2,7 @@
 ^disasterMaps\.Rproj$
 ^\.Rproj\.user$
 ^\.quarto$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.claude$
