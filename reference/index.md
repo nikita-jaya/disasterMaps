@@ -1,40 +1,52 @@
 # Package index
 
-## All functions
+## Data Cleaning
 
+- [`clean_numeric()`](https://nikita-jaya.github.io/disasterMaps/reference/clean_numeric.md)
+  : Title
 - [`aggregate_csvs()`](https://nikita-jaya.github.io/disasterMaps/reference/aggregate_csvs.md)
   : Title
 - [`analyze_dataset()`](https://nikita-jaya.github.io/disasterMaps/reference/analyze_dataset.md)
   : Title
-- [`build_moved()`](https://nikita-jaya.github.io/disasterMaps/reference/build_moved.md)
-  : Title
-- [`build_tiles()`](https://nikita-jaya.github.io/disasterMaps/reference/build_tiles.md)
-  : Title
-- [`clean_numeric()`](https://nikita-jaya.github.io/disasterMaps/reference/clean_numeric.md)
-  : Title
-- [`compute_windows()`](https://nikita-jaya.github.io/disasterMaps/reference/compute_windows.md)
-  : Title
-- [`disaster_limits()`](https://nikita-jaya.github.io/disasterMaps/reference/disaster_limits.md)
-  : Title
-- [`fetch_earthquakes()`](https://nikita-jaya.github.io/disasterMaps/reference/fetch_earthquakes.md)
-  : Title
-- [`fetch_fires()`](https://nikita-jaya.github.io/disasterMaps/reference/fetch_fires.md)
-  : Title
-- [`fit_zoom()`](https://nikita-jaya.github.io/disasterMaps/reference/fit_zoom.md)
-  : Title
-- [`format_time()`](https://nikita-jaya.github.io/disasterMaps/reference/format_time.md)
+- [`load_population()`](https://nikita-jaya.github.io/disasterMaps/reference/load_population.md)
   : Title
 - [`load_movement()`](https://nikita-jaya.github.io/disasterMaps/reference/load_movement.md)
   : Title
-- [`load_population()`](https://nikita-jaya.github.io/disasterMaps/reference/load_population.md)
+- [`build_moved()`](https://nikita-jaya.github.io/disasterMaps/reference/build_moved.md)
+  : Title
+- [`fit_zoom()`](https://nikita-jaya.github.io/disasterMaps/reference/fit_zoom.md)
+  : Title
+- [`build_tiles()`](https://nikita-jaya.github.io/disasterMaps/reference/build_tiles.md)
+  : Title
+- [`format_time()`](https://nikita-jaya.github.io/disasterMaps/reference/format_time.md)
+  : Title
+- [`compute_windows()`](https://nikita-jaya.github.io/disasterMaps/reference/compute_windows.md)
+  : Title
+
+## Plot Functions
+
+- [`shared_limits()`](https://nikita-jaya.github.io/disasterMaps/reference/shared_limits.md)
   : Title
 - [`population_plot()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot.md)
   : Title
-- [`population_plot_animate()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot_animate.md)
+- [`population_plot_n_difference()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot_n_difference.md)
   : Title
 - [`population_plot_n_crisis()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot_n_crisis.md)
   : Title
-- [`population_plot_n_difference()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot_n_difference.md)
+
+## Earthquake Functions
+
+- [`fetch_earthquakes()`](https://nikita-jaya.github.io/disasterMaps/reference/fetch_earthquakes.md)
   : Title
-- [`shared_limits()`](https://nikita-jaya.github.io/disasterMaps/reference/shared_limits.md)
+- [`disaster_limits()`](https://nikita-jaya.github.io/disasterMaps/reference/disaster_limits.md)
+  : Title
+
+## Fire Functions
+
+- [`fetch_fires()`](https://nikita-jaya.github.io/disasterMaps/reference/fetch_fires.md)
+  : Title
+
+## Animations
+
+- [`population_plot_animate()`](https://nikita-jaya.github.io/disasterMaps/reference/population_plot_animate.md)
   : Title
