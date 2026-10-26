@@ -1,0 +1,13 @@
+Package: disasterMaps
+Title: Disaster Maps
+Version: 0.0.0.9000
+Authors@R: 
+    person("Nikita", "Jayaprakash", , "nikita.jp@gmail.com", role = c("aut", "cre"))
+Description: This package cleans and visualizes utilizes Meta’s Data for Good crisis datasets, which are limited-assess datasets that track population changes through Facebook.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
