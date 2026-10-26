@@ -1,23 +1,17 @@
-library(tidyverse)
-library(sf)
-library(lubridate)
-library(gganimate)
-library(ggforce)
-library(ggspatial)
-library(maptiles)
-library(quadkeyr)
-library(prettymapr)
-library(patchwork)
-library(here)
-library(rosm)
-
-
 ######------- Data Cleaning Functions --------#######
-here::i_am("1_data_cleaning.R")
 
 # Convert possible "\N" values to proper numeric NA values.
 # NOTE: for the CSV load path this is now handled at read time via the `na=`
 # argument in aggregate_csvs() (see #3); kept here for ad-hoc column cleaning.
+
+#' Title
+#'
+#' @param x
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 clean_numeric <- function(x) {
   suppressWarnings(as.numeric(na_if(as.character(x), "\\N")))
 }
@@ -25,6 +19,21 @@ clean_numeric <- function(x) {
 
 ###### ----- Aggregate CSVs ------ ######
 
+#' Title
+#'
+#' @param path_parts
+#' @param output_name
+#' @param dedupe
+#' @param lat_col
+#' @param lon_col
+#' @param prefix
+#' @param calculate_county_change
+#' @param county_group_cols
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 aggregate_csvs <- function(path_parts,
                            output_name = "aggregated.csv",
                            dedupe = TRUE,
@@ -90,6 +99,14 @@ aggregate_csvs <- function(path_parts,
 }
 
 
+#' Title
+#'
+#' @param df
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 analyze_dataset <- function(df) {
   list(
     missing = df |>
@@ -125,12 +142,31 @@ analyze_dataset <- function(df) {
 rds_cache_dir <- "."
 
 # Resolve <dir>/<file>, creating <dir> if needed; returns the full cache path.
+
+#' Title
+#'
+#' @param file
+#' @param dir
+#'
+#' @returns
+#' @keywords internal
+#' @noRd
 cache_path <- function(file, dir = rds_cache_dir) {
   if (!dir.exists(dir)) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   file.path(dir, file)
 }
 
-load_population <- function(re_run = re_run_cleaning, cache_dir = rds_cache_dir,
+#' Title
+#'
+#' @param re_run
+#' @param cache_dir
+#' @param cache
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+load_population <- function(re_run = FALSE, cache_dir = rds_cache_dir,
                             cache = "fb_data_bing.Rds") {
   path <- cache_path(cache, cache_dir)
   if (re_run || !file.exists(path)) {
@@ -149,7 +185,17 @@ load_population <- function(re_run = re_run_cleaning, cache_dir = rds_cache_dir,
   }
 }
 
-load_movement <- function(re_run = re_run_cleaning, cache_dir = rds_cache_dir,
+#' Title
+#'
+#' @param re_run
+#' @param cache_dir
+#' @param cache
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+load_movement <- function(re_run = FALSE, cache_dir = rds_cache_dir,
                           cache = "mp_data_bing.Rds") {
   path <- cache_path(cache, cache_dir)
   if (re_run || !file.exists(path)) {
@@ -163,7 +209,18 @@ load_movement <- function(re_run = re_run_cleaning, cache_dir = rds_cache_dir,
   }
 }
 
-build_moved <- function(mp_data_bing, re_run = re_run_cleaning, cache_dir = rds_cache_dir,
+#' Title
+#'
+#' @param mp_data_bing
+#' @param re_run
+#' @param cache_dir
+#' @param cache
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+build_moved <- function(mp_data_bing, re_run = FALSE, cache_dir = rds_cache_dir,
                         cache = "moved.Rds") {
   path <- cache_path(cache, cache_dir)
   if (re_run || !file.exists(path)) {
@@ -196,9 +253,6 @@ build_moved <- function(mp_data_bing, re_run = re_run_cleaning, cache_dir = rds_
 # hits the network; the rest read this cache. (The old global zoom-6 `osm`
 # download was removed — every plot fetches a basemap for its own extent.)
 tile_cache_dir <- "maptiles_cache"
-if (!dir.exists(tile_cache_dir)) {
-  dir.create(tile_cache_dir, recursive = TRUE, showWarnings = FALSE)
-}
 
 # ---------------------------------------------------------------------------
 # fit_zoom() — cap basemap zoom to a tile budget (OOM guard).
@@ -206,11 +260,23 @@ if (!dir.exists(tile_cache_dir)) {
 #      long-haul flow) can span the whole region; at a high zoom that is thousands
 #      of tiles, which stitches into a huge raster and crashes the runtime. This
 #      lowers the zoom until the estimated tile count is within max_tiles.
-#' @param lon/@param lat num c(min,max) of the extent (degrees).
-#' @param zoom int requested basemap zoom.
-#' @param max_tiles int approx tile-count ceiling (default 250).
-#' @return int a zoom <= requested; messages if it had to reduce.
+#  lon/lat   num c(min,max) of the extent (degrees).
+#  zoom      int requested basemap zoom.
+#  max_tiles int approx tile-count ceiling (default 250).
+#  returns   int a zoom <= requested; messages if it had to reduce.
 # ---------------------------------------------------------------------------
+
+#' Title
+#'
+#' @param lon
+#' @param lat
+#' @param zoom
+#' @param max_tiles
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
   dlon <- abs(diff(range(lon))); dlat <- abs(diff(range(lat)))
   z <- zoom
@@ -230,7 +296,19 @@ fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
 # Tile-polygon step: quadkey squares → EPSG:3857, with the two renames the plots
 # use. Rebuild if forced or the cache is missing. If you rebuilt fb_data_bing
 # (e.g. new CSVs), pass re_run = TRUE here too so the tiles stay in sync.
-build_tiles <- function(fb_data_bing, re_run = re_run_cleaning, cache_dir = rds_cache_dir,
+
+#' Title
+#'
+#' @param fb_data_bing
+#' @param re_run
+#' @param cache_dir
+#' @param cache
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+build_tiles <- function(fb_data_bing, re_run = FALSE, cache_dir = rds_cache_dir,
                         cache = "tiles.Rds") {
   path <- cache_path(cache, cache_dir)
   if (re_run || !file.exists(path)) {
@@ -256,6 +334,16 @@ build_tiles <- function(fb_data_bing, re_run = re_run_cleaning, cache_dir = rds_
     dplyr::rename(`# Users During Crisis` = n_crisis)
 }
 
+#' Title
+#'
+#' @param ds
+#' @param hour
+#' @param tzone
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 format_time <- function(ds, hour, tzone) {
   datetime <- ymd_hm(
     paste(ds, hour),
@@ -282,6 +370,16 @@ format_time <- function(ds, hour, tzone) {
 
 # Earliest & latest time windows actually present in the data, plus pretty labels.
 # Lives here (not in the .qmd) so the notebook and the report share one source.
+
+#' Title
+#'
+#' @param fb_data_bing
+#' @param tzone
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 compute_windows <- function(fb_data_bing, tzone) {
   aw <- fb_data_bing |>
     dplyr::distinct(ds, hour) |>
@@ -296,12 +394,3 @@ compute_windows <- function(fb_data_bing, tzone) {
     latest_label = format_time(as.character(lw$ds), lw$hour, tzone = tzone)
   )
 }
-
-####----- LOADING DATA -----
-
-fb_data_bing <- load_population()
-tiles_3857   <- build_tiles(fb_data_bing)
-w <- compute_windows(fb_data_bing, tzone)
-attach(w)
-mp_data_bing <- load_movement()
-moved <- build_moved(mp_data_bing)

@@ -1,3 +1,15 @@
+#' Title
+#'
+#' @param lon_limits
+#' @param lat_limits
+#' @param start_date
+#' @param end_date
+#' @param min_magnitude
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 fetch_earthquakes <- function(
     lon_limits,
     lat_limits,
@@ -41,6 +53,18 @@ fetch_earthquakes <- function(
   return (eq)
 }
 
+#' Title
+#'
+#' @param lon_limits
+#' @param lat_limits
+#' @param start_date
+#' @param end_date
+#' @param min_magnitude
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 disaster_limits <- function(
     lon_limits,
     lat_limits,
@@ -57,40 +81,68 @@ disaster_limits <- function(
   range(earthquakes$mag, na.rm = TRUE)
 }
 
-earthquakes <- fetch_earthquakes(lon_limits,
+# Earthquake layer added by population_plot(disaster_type = "earthquake").
+
+#' Title
+#'
+#' @param p1
+#' @param lon_limits
+#' @param lat_limits
+#' @param start_date
+#' @param end_date
+#' @param min_magnitude
+#' @param disaster_limits
+#' @param xlim
+#' @param ylim
+#'
+#' @returns
+#' @keywords internal
+#' @noRd
+add_earthquake_layer <- function(p1,
+                                 lon_limits,
                                  lat_limits,
                                  start_date,
                                  end_date,
-                                 min_magnitude)
-if (is.null(disaster_limits)){
-  disaster_limits <- range(earthquakes$mag, na.rm = TRUE) 
-}
+                                 min_magnitude,
+                                 disaster_limits,
+                                 xlim,
+                                 ylim) {
 
-p1 <- p1 +
-  geom_sf(
-    data = earthquakes,
-    aes(color = mag),
-    size = 5,
-    alpha = 0.8
-  ) +
-  geom_sf_text(
-    data = earthquakes,
-    aes(label = eq_order),
-    color = "black",
-    fontface = "bold",
-    size = 3
-  ) +
-  scale_color_gradient(
-    low = "gold",
-    high = "red",
-    limits = disaster_limits,
-    breaks = pretty(disaster_limits, n = 5),
-    oob = scales::squish,
-    name = "Magnitude"
-  ) + 
-  coord_sf(
-    crs = st_crs(3857),
-    xlim = xlim,
-    ylim = ylim,
-    expand = FALSE
-  )
+  earthquakes <- fetch_earthquakes(lon_limits,
+                                   lat_limits,
+                                   start_date,
+                                   end_date,
+                                   min_magnitude)
+  if (is.null(disaster_limits)){
+    disaster_limits <- range(earthquakes$mag, na.rm = TRUE)
+  }
+
+  p1 +
+    geom_sf(
+      data = earthquakes,
+      aes(color = mag),
+      size = 5,
+      alpha = 0.8
+    ) +
+    geom_sf_text(
+      data = earthquakes,
+      aes(label = eq_order),
+      color = "black",
+      fontface = "bold",
+      size = 3
+    ) +
+    scale_color_gradient(
+      low = "gold",
+      high = "red",
+      limits = disaster_limits,
+      breaks = pretty(disaster_limits, n = 5),
+      oob = scales::squish,
+      name = "Magnitude"
+    ) +
+    coord_sf(
+      crs = st_crs(3857),
+      xlim = xlim,
+      ylim = ylim,
+      expand = FALSE
+    )
+}

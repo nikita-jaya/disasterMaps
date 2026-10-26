@@ -1,3 +1,16 @@
+#' Title
+#'
+#' @param col
+#' @param symmetric
+#' @param ds1
+#' @param hour1
+#' @param ds2
+#' @param hour2
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 shared_limits <- function(col, symmetric = FALSE,
                           ds1 = first_ds, hour1 = first_hour,
                           ds2 = latest_ds, hour2 = latest_hour) {
@@ -13,6 +26,31 @@ shared_limits <- function(col, symmetric = FALSE,
   if (symmetric) { m <- max(abs(r)); c(-m, m) } else r
 }
 
+#' Title
+#'
+#' @param plot_ds
+#' @param plot_hour
+#' @param tzone
+#' @param metric
+#' @param title
+#' @param plot_title
+#' @param lon_limits
+#' @param lat_limits
+#' @param zoom
+#' @param fill_limits
+#' @param labels
+#' @param label_angles
+#' @param highway_detail
+#' @param disaster_type
+#' @param disaster_limits
+#' @param start_date
+#' @param end_date
+#' @param min_magnitude
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 population_plot <- function(
     plot_ds,
     plot_hour,
@@ -28,7 +66,10 @@ population_plot <- function(
     label_angles = NULL,
     highway_detail = c("none", "major", "secondary", "all"),
     disaster_type = NULL, # "fire", "earthquake"
-    disaster_limits = NULL
+    disaster_limits = NULL,
+    start_date = NULL,    # disaster query window (fire / earthquake)
+    end_date = NULL,
+    min_magnitude = 2.5   # earthquakes only
 ) {
   
   metric <- match.arg(metric)
@@ -388,9 +429,16 @@ population_plot <- function(
   
   
   if (!is.null(disaster_type)) {
-    
-    source(paste0("3_", disaster_type, "_functions.R"),
-           local = environment()
+
+    p1 <- switch(
+      disaster_type,
+      fire = add_fire_layer(
+        p1, start_date, end_date, lon_limits, lat_limits
+      ),
+      earthquake = add_earthquake_layer(
+        p1, lon_limits, lat_limits, start_date, end_date,
+        min_magnitude, disaster_limits, xlim, ylim
+      )
     )
   }
   
@@ -614,6 +662,17 @@ population_plot <- function(
 
 # Thin wrappers preserve the original call sites / API (#6). The ~250 lines of
 # duplicated body are now the single implementation above.
+
+#' Title
+#'
+#' @param plot_ds
+#' @param plot_hour
+#' @param ...
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 population_plot_n_difference <- function(plot_ds, plot_hour, ...) {
   population_plot(plot_ds, plot_hour, metric = "difference", ...) +
     theme_minimal() +
@@ -628,6 +687,16 @@ population_plot_n_difference <- function(plot_ds, plot_hour, ...) {
     )
 }
 
+#' Title
+#'
+#' @param plot_ds
+#' @param plot_hour
+#' @param ...
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 population_plot_n_crisis <- function(plot_ds, plot_hour, ...) {
   population_plot(plot_ds, plot_hour, metric = "crisis", ...) +
     theme_minimal() +

@@ -11,5 +11,27 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
+    gifski,
+    quarto,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Imports: 
+    dplyr,
+    gganimate,
+    ggplot2,
+    ggspatial,
+    here,
+    lubridate,
+    maptiles,
+    osmdata,
+    quadkeyr,
+    readr,
+    rlang,
+    scales,
+    sf,
+    stats,
+    tidyselect,
+    utils
+Depends: 
+    R (>= 4.1.0)
+VignetteBuilder: quarto

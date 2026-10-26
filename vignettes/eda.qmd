@@ -1,18 +1,32 @@
 ---
 title: "Exploratory Data Analysis (Disaster-Agnostic)"
-format: pdf
+vignette: >
+  %\VignetteIndexEntry{Exploratory Data Analysis (Disaster-Agnostic)}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+execute:
+  eval: false
 ---
 
 ## Instructions
 
 Make sure you set `tzone` in the code chunk below to the relevant timezone. Then, you can run this file to get rough population and displacement plots for the first and last timepoints.
 
+The code below is not run when the package is built, because it needs the Meta Data for Good CSVs (`fb_pop_crisis_bing_tiles/` and `fb_move_crisis_bing_tiles/`) in your project folder.
+
 ## Data Cleaning + Loading
 ```{r}
-re_run_cleaning <- T
-tzone <- ### ENTER TIMEZONE HERE
-source("1_data_cleaning.R")
-source("2_plot_functions.R")
+library(disasterMaps)
+
+re_run_cleaning <- TRUE
+tzone <- "America/Los_Angeles" # ENTER TIMEZONE HERE
+
+fb_data_bing <- load_population(re_run = re_run_cleaning)
+tiles_3857   <- build_tiles(fb_data_bing, re_run = re_run_cleaning)
+w <- compute_windows(fb_data_bing, tzone)
+attach(w)
+mp_data_bing <- load_movement(re_run = re_run_cleaning)
+moved <- build_moved(mp_data_bing, re_run = re_run_cleaning)
 ```
 
 
@@ -90,7 +104,10 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 #                              lat_limits = range(fb_data_bing$latitude),
 #                              zoom = 6,
 #                              tzone = tzone,
-#                              disaster_type = "earthquake"
+#                              disaster_type = "earthquake",
+#                              start_date = start_date,
+#                              end_date = end_date,
+#                              min_magnitude = min_magnitude
 #                              )
 ```
 
@@ -110,15 +127,13 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 #                              lat_limits = range(fb_data_bing$latitude),
 #                              zoom = 6,
 #                              tzone = tzone,
-#                              disaster_type = "fire"
+#                              disaster_type = "fire",
+#                              start_date = start_date,
+#                              end_date = end_date
 #                              )
 ```
 
 ## Animations
-
-```{r}
-source("5_animations.R")
-```
 
 ### Population Animation
 

@@ -1,9 +1,25 @@
+#' Title
+#'
+#' @param start_date
+#' @param end_date
+#' @param lon_limits
+#' @param lat_limits
+#' @param re_run
+#' @param cache_dir
+#' @param cache
+#' @param date_field
+#' @param layer_url
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 fetch_fires <- function(
     start_date,
     end_date,
     lon_limits,
     lat_limits,
-    re_run = re_run_cleaning,
+    re_run = FALSE,
     cache_dir = rds_cache_dir,
     cache = "fires.Rds",
     date_field = "attr_FireDiscoveryDateTime",
@@ -237,18 +253,34 @@ fetch_fires <- function(
 }
 
 
-fires <- fetch_fires(
-  start_date = start_date,
-  end_date   = end_date,
-  lon_limits = lon_limits,
-  lat_limits = lat_limits,
-  re_run = TRUE
-)
+# Fire-perimeter layer added by population_plot(disaster_type = "fire").
 
-p1 <- p1 +
-  geom_sf(
-    data = fires,
-    aes(color = "Fire Perimeter"),
-    fill = NA,
-    linewidth = 0.5
+#' Title
+#'
+#' @param p1
+#' @param start_date
+#' @param end_date
+#' @param lon_limits
+#' @param lat_limits
+#'
+#' @returns
+#' @keywords internal
+#' @noRd
+add_fire_layer <- function(p1, start_date, end_date, lon_limits, lat_limits) {
+
+  fires <- fetch_fires(
+    start_date = start_date,
+    end_date   = end_date,
+    lon_limits = lon_limits,
+    lat_limits = lat_limits,
+    re_run = TRUE
   )
+
+  p1 +
+    geom_sf(
+      data = fires,
+      aes(color = "Fire Perimeter"),
+      fill = NA,
+      linewidth = 0.5
+    )
+}

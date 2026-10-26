@@ -1,3 +1,19 @@
+#' Title
+#'
+#' @param metric
+#' @param tzone
+#' @param ds_values
+#' @param hour_values
+#' @param ...
+#' @param fps
+#' @param duration
+#' @param filename
+#' @param renderer
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 population_plot_animate <- function(
     metric = c("crisis", "difference"),
     tzone,
