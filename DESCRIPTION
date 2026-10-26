@@ -3,7 +3,9 @@ Title: Disaster Maps
 Version: 0.0.0.9000
 Authors@R: 
     person("Nikita", "Jayaprakash", , "nikita.jp@gmail.com", role = c("aut", "cre"))
-Description: This package cleans and visualizes utilizes Meta’s Data for Good crisis datasets, which are limited-assess datasets that track population changes through Facebook.
+Description: Cleans and visualizes Meta's Data for Good crisis datasets,
+    which are limited-access datasets that track population changes
+    through Facebook.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
