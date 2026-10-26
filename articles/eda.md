@@ -1,0 +1,162 @@
+# Exploratory Data Analysis (Disaster-Agnostic)
+
+## Instructions
+
+Make sure you set `tzone` in the code chunk below to the relevant
+timezone. Then, you can run this file to get rough population and
+displacement plots for the first and last timepoints.
+
+The code below is not run when the package is built, because it needs
+the Meta Data for Good CSVs (`fb_pop_crisis_bing_tiles/` and
+`fb_move_crisis_bing_tiles/`) in your project folder.
+
+## Data Cleaning + Loading
+
+``` r
+
+library(disasterMaps)
+
+re_run_cleaning <- TRUE
+tzone <- "America/Los_Angeles" # ENTER TIMEZONE HERE
+
+fb_data_bing <- load_population(re_run = re_run_cleaning)
+tiles_3857   <- build_tiles(fb_data_bing, re_run = re_run_cleaning)
+w <- compute_windows(fb_data_bing, tzone)
+attach(w)
+mp_data_bing <- load_movement(re_run = re_run_cleaning)
+moved <- build_moved(mp_data_bing, re_run = re_run_cleaning)
+```
+
+## First Timestamp
+
+### Population Map
+
+``` r
+
+population_plot_n_crisis(plot_ds = w[["first_ds"]],
+                             plot_hour = w[["first_hour"]],
+                             lon_limits = range(fb_data_bing$longitude), 
+                             lat_limits = range(fb_data_bing$latitude),
+                             zoom = 6,
+                             tzone = tzone
+                             )
+```
+
+### Displacement Map
+
+``` r
+
+population_plot_n_difference(plot_ds = w[["first_ds"]],
+                             plot_hour = w[["first_hour"]],
+                             lon_limits = range(fb_data_bing$longitude), 
+                             lat_limits = range(fb_data_bing$latitude),
+                             zoom = 6,
+                             tzone = tzone
+                             )
+```
+
+## Last Timestamp
+
+### Population Map
+
+``` r
+
+population_plot_n_crisis(plot_ds = w[["latest_ds"]],
+                             plot_hour = w[["latest_hour"]],
+                             lon_limits = range(fb_data_bing$longitude), 
+                             lat_limits = range(fb_data_bing$latitude),
+                             zoom = 6,
+                             tzone = tzone
+                             )
+```
+
+### Displacement
+
+``` r
+
+population_plot_n_difference(plot_ds = w[["latest_ds"]],
+                             plot_hour = w[["latest_hour"]],
+                             lon_limits = range(fb_data_bing$longitude), 
+                             lat_limits = range(fb_data_bing$latitude),
+                             zoom = 6,
+                             tzone = tzone
+)
+```
+
+## Disaster-Specific
+
+### Earthquakes
+
+``` r
+
+# start and end dates for earthquakes, which can be adjusted
+# start_date <- as.Date(w[["first_ds"]]) -7
+# end_date <- as.Date(w[["first_ds"]])
+# min_magnitude <- 2.5
+
+# if you want shared legends, use disaster_limits()!!
+
+# population_plot_n_difference(plot_ds = w[["first_ds"]],
+#                              plot_hour = w[["first_hour"]],
+#                              lon_limits = range(fb_data_bing$longitude), 
+#                              lat_limits = range(fb_data_bing$latitude),
+#                              zoom = 6,
+#                              tzone = tzone,
+#                              disaster_type = "earthquake",
+#                              start_date = start_date,
+#                              end_date = end_date,
+#                              min_magnitude = min_magnitude
+#                              )
+```
+
+### Fires
+
+``` r
+
+# start and end dates for earthquakes, which can be adjusted
+# start_date <- as.Date(w[["first_ds"]]) -7
+# end_date <- as.Date(w[["first_ds"]])
+
+# if you want shared legends, use disaster_limits()!!
+
+# population_plot_n_difference(plot_ds = w[["first_ds"]],
+#                              plot_hour = w[["first_hour"]],
+#                              lon_limits = range(fb_data_bing$longitude), 
+#                              lat_limits = range(fb_data_bing$latitude),
+#                              zoom = 6,
+#                              tzone = tzone,
+#                              disaster_type = "fire",
+#                              start_date = start_date,
+#                              end_date = end_date
+#                              )
+```
+
+## Animations
+
+### Population Animation
+
+``` r
+
+population_plot_animate(
+  metric = "crisis",
+  tzone = tzone,
+  lon_limits = range(fb_data_bing$longitude),
+  lat_limits = range(fb_data_bing$latitude),
+  fps = 8,
+  filename = "crisis.gif"
+)
+```
+
+### Population Animation
+
+``` r
+
+population_plot_animate(
+  metric = "difference",
+  tzone = tzone,
+  lon_limits = range(fb_data_bing$longitude),
+  lat_limits = range(fb_data_bing$latitude),
+  fps = 8,
+  filename = "difference.gif"
+)
+```
