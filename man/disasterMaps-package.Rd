@@ -8,6 +8,13 @@
 \description{
 Cleans and visualizes Meta's Data for Good crisis datasets, which are limited-access datasets that track population changes through Facebook.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://nikita-jaya.github.io/disasterMaps/}
+}
+
+}
 \author{
 \strong{Maintainer}: Nikita Jayaprakash \email{nikita.jp@gmail.com}
 

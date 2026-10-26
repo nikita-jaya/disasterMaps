@@ -35,3 +35,4 @@ Imports:
 Depends: 
     R (>= 4.1.0)
 VignetteBuilder: quarto
+URL: https://nikita-jaya.github.io/disasterMaps/
