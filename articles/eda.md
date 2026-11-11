@@ -26,7 +26,7 @@ attach(w)
 
 lon_limits <- range(tiles_3857$longitude)
 lat_limits <- range(tiles_3857$latitude)
-zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
+zoom <- 10 # lowered automatically if the extent is too wide
 
 # OpenStreetMap roads drawn on top: "none", "major", "secondary" or "all"
 highway_detail <- "major"
@@ -48,7 +48,7 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9996848106384 seconds
+    Waiting 14.9997203350067 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
     OpenStreetMap: HTTP 502 Bad Gateway.
@@ -69,10 +69,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997749328613 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    Waiting 14.9997787475586 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-3-1.png)
 
@@ -92,7 +89,7 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              )
 ```
 
-    Waiting 14.9997856616974 seconds
+    Waiting 14.9997932910919 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-4-1.png)
 
@@ -110,10 +107,7 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 )
 ```
 
-    Waiting 14.9997198581696 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    Waiting 14.9997665882111 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-5-1.png)
 
@@ -165,7 +159,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997179508209 seconds
+    Waiting 14.9997828006744 seconds
 
     Downloading wildfire perimeters from WFIGS...
 

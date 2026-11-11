@@ -2,17 +2,11 @@
 
 ## Data Cleaning
 
-- [`aggregate_csvs()`](https://nikita-jaya.github.io/disasterMaps/reference/aggregate_csvs.md)
-  : Title
-- [`analyze_dataset()`](https://nikita-jaya.github.io/disasterMaps/reference/analyze_dataset.md)
-  : Title
 - [`load_population()`](https://nikita-jaya.github.io/disasterMaps/reference/load_population.md)
   : Title
 - [`load_movement()`](https://nikita-jaya.github.io/disasterMaps/reference/load_movement.md)
   : Title
-- [`fit_zoom()`](https://nikita-jaya.github.io/disasterMaps/reference/fit_zoom.md)
-  : Title
-- [`format_time()`](https://nikita-jaya.github.io/disasterMaps/reference/format_time.md)
+- [`analyze_dataset()`](https://nikita-jaya.github.io/disasterMaps/reference/analyze_dataset.md)
   : Title
 - [`compute_windows()`](https://nikita-jaya.github.io/disasterMaps/reference/compute_windows.md)
   : Title

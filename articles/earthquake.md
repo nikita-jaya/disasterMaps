@@ -16,45 +16,67 @@ list.files(data_dir)
 #> [1] "turkey_earthquake_2023-02-06_0000.csv"
 #> [2] "turkey_earthquake_2023-02-06_1600.csv"
 
-fb_data_bing <- aggregate_csvs(data_dir)
-head(fb_data_bing)
-#> # A tibble: 6 × 15
-#>   latitude longitude quadkey     country date_time           n_baseline n_crisis
-#>      <dbl>     <dbl> <chr>       <chr>   <dttm>                   <dbl>    <dbl>
-#> 1     38.5      36.0 1221102112… TR      2023-02-06 08:00:00         24       19
-#> 2     38.5      36.0 1221102112… TR      2023-02-06 08:00:00         18       19
-#> 3     38.5      36.1 1221102112… TR      2023-02-06 08:00:00         13       NA
-#> 4     38.5      36.1 1221102112… TR      2023-02-06 08:00:00         23       32
-#> 5     38.5      36.1 1221102112… TR      2023-02-06 08:00:00         20       20
-#> 6     38.5      36.2 1221102112… TR      2023-02-06 08:00:00         37       36
-#> # ℹ 8 more variables: n_difference <dbl>, density_baseline <dbl>,
-#> #   density_crisis <dbl>, percent_change <dbl>, z_score <dbl>, ds <date>,
-#> #   source_file <chr>, hour <chr>
+tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = tempdir())
+head(tiles_3857)
+#> Simple feature collection with 6 features and 15 fields
+#> Geometry type: POLYGON
+#> Dimension:     XY
+#> Bounding box:  xmin: 4001631 ymin: 4642479 xmax: 4016307 ymax: 4647371
+#> Projected CRS: WGS 84 / Pseudo-Mercator
+#>         quadkey latitude longitude country           date_time n_baseline
+#> 1 1221102112030 38.46219  35.96924      TR 2023-02-06 08:00:00         24
+#> 2 1221102112030 38.46219  35.96924      TR 2023-02-07 00:00:00         24
+#> 3 1221102112031 38.46219  36.01318      TR 2023-02-06 08:00:00         18
+#> 4 1221102112031 38.46219  36.01318      TR 2023-02-07 00:00:00         17
+#> 5 1221102112120 38.46219  36.05713      TR 2023-02-06 08:00:00         13
+#> 6 1221102112120 38.46219  36.05713      TR 2023-02-07 00:00:00         13
+#>   # Users During Crisis Difference between baseline and crisis density_baseline
+#> 1                    19                                     -5      4.24588e-05
+#> 2                    33                                      9      4.37687e-05
+#> 3                    19                                      1      3.18441e-05
+#> 4                    21                                      4      3.10028e-05
+#> 5                    NA                                     NA      2.29985e-05
+#> 6                    13                                      0      2.37080e-05
+#>   density_crisis percent_change z_score         ds
+#> 1    3.40766e-05       -20.8333 -0.5081 2023-02-06
+#> 2    6.30559e-05        37.5000  0.9300 2023-02-06
+#> 3    3.40766e-05         5.5556  0.1207 2023-02-06
+#> 4    4.01265e-05        23.5294  0.4907 2023-02-06
+#> 5             NA             NA      NA 2023-02-06
+#> 6    2.48402e-05         0.0000  0.0000 2023-02-06
+#>                             source_file hour                       geometry
+#> 1 turkey_earthquake_2023-02-06_0000.csv 0000 POLYGON ((4001631 4642479, ...
+#> 2 turkey_earthquake_2023-02-06_1600.csv 1600 POLYGON ((4001631 4642479, ...
+#> 3 turkey_earthquake_2023-02-06_0000.csv 0000 POLYGON ((4006523 4642479, ...
+#> 4 turkey_earthquake_2023-02-06_1600.csv 1600 POLYGON ((4006523 4642479, ...
+#> 5 turkey_earthquake_2023-02-06_0000.csv 0000 POLYGON ((4011415 4642479, ...
+#> 6 turkey_earthquake_2023-02-06_1600.csv 1600 POLYGON ((4011415 4642479, ...
 ```
 
 ``` r
 
-analyze_dataset(fb_data_bing)
+analyze_dataset(tiles_3857)
 #> $missing
-#> # A tibble: 1 × 15
-#>   latitude longitude quadkey country date_time n_baseline n_crisis n_difference
-#>      <dbl>     <dbl>   <dbl>   <dbl>     <dbl>      <dbl>    <dbl>        <dbl>
-#> 1        0         0       0       0         0   0.000778   0.0104       0.0112
-#> # ℹ 7 more variables: density_baseline <dbl>, density_crisis <dbl>,
-#> #   percent_change <dbl>, z_score <dbl>, ds <dbl>, source_file <dbl>,
-#> #   hour <dbl>
+#>   quadkey latitude longitude country date_time   n_baseline
+#> 1       0        0         0       0         0 0.0007784524
+#>   # Users During Crisis Difference between baseline and crisis density_baseline
+#> 1            0.01043126                             0.01120972     0.0007784524
+#>   density_crisis percent_change    z_score ds source_file hour
+#> 1     0.01043126     0.01120972 0.01120972  0           0    0
 #> 
 #> $numeric_summary
-#> # A tibble: 1 × 18
 #>   latitude_mean latitude_sd longitude_mean longitude_sd n_baseline_mean
-#>           <dbl>       <dbl>          <dbl>        <dbl>           <dbl>
-#> 1          37.5       0.598           37.2        0.771            174.
-#> # ℹ 13 more variables: n_baseline_sd <dbl>, n_crisis_mean <dbl>,
-#> #   n_crisis_sd <dbl>, n_difference_mean <dbl>, n_difference_sd <dbl>,
-#> #   density_baseline_mean <dbl>, density_baseline_sd <dbl>,
-#> #   density_crisis_mean <dbl>, density_crisis_sd <dbl>,
-#> #   percent_change_mean <dbl>, percent_change_sd <dbl>, z_score_mean <dbl>,
-#> #   z_score_sd <dbl>
+#> 1      37.51884   0.5978687       37.17482    0.7710179        173.5106
+#>   n_baseline_sd # Users During Crisis_mean # Users During Crisis_sd
+#> 1      620.8509                   170.0617                 597.8652
+#>   Difference between baseline and crisis_mean
+#> 1                                   -5.004881
+#>   Difference between baseline and crisis_sd density_baseline_mean
+#> 1                                  90.99679          0.0003116236
+#>   density_baseline_sd density_crisis_mean density_crisis_sd percent_change_mean
+#> 1         0.001114903        0.0003146633       0.001105383            1.594948
+#>   percent_change_sd z_score_mean z_score_sd
+#> 1           19.2276   0.02898885  0.6441174
 #> 
 #> $n_rows
 #> [1] 6423
@@ -72,33 +94,28 @@ list.files(move_dir)
 #> [1] "turkey_earthquake_movement_2023-02-06_0000.csv"
 #> [2] "turkey_earthquake_movement_2023-02-06_1600.csv"
 
-mp_data_bing <- aggregate_csvs(move_dir)
-head(mp_data_bing)
+moved <- load_movement(move_dir, re_run = TRUE, cache_dir = tempdir())
+head(moved)
 #> # A tibble: 6 × 17
 #>   start_latitude start_longitude end_latitude end_longitude length_km
 #>            <dbl>           <dbl>        <dbl>         <dbl>     <dbl>
-#> 1           38.5            36.0         38.5          36.0         0
-#> 2           38.5            36.0         38.5          36.0         0
-#> 3           38.4            36.0         38.4          36.0         0
-#> 4           38.4            36.0         38.4          36.0         0
-#> 5           38.5            36.1         38.5          36.1         0
-#> 6           38.5            36.1         38.5          36.1         0
+#> 1           37.1            36.2         37.1          36.1      5.51
+#> 2           37.1            36.2         37.1          36.2      3.90
+#> 3           37.1            36.2         37.1          36.2      3.90
+#> 4           37.1            36.2         37.1          36.2      5.51
+#> 5           37.1            36.2         37.1          36.3      8.72
+#> 6           37.1            36.2         37.1          36.2      3.90
 #> # ℹ 12 more variables: start_quadkey <chr>, end_quadkey <chr>, country <chr>,
-#> #   date_time <dttm>, n_baseline <dbl>, n_crisis <dbl>, n_difference <dbl>,
-#> #   percent_change <dbl>, z_score <dbl>, ds <date>, source_file <chr>,
-#> #   hour <chr>
-
-moved <- load_movement(move_dir, re_run = TRUE, cache_dir = tempdir())
+#> #   date_time <dttm>, n_baseline <dbl>, `# Users During Crisis` <dbl>,
+#> #   `Difference between baseline and crisis` <dbl>, percent_change <dbl>,
+#> #   z_score <dbl>, ds <date>, source_file <chr>, hour <chr>
 ```
 
-## Tiles and time windows
+## Time windows and map extent
 
 ``` r
 
-tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = tempdir())
-#> Building tile polygons for 3213 distinct quadkeys (6423 rows total) -> /tmp/RtmpMEyrzp/tiles.Rds
-
-w <- compute_windows(fb_data_bing, tzone)
+w <- compute_windows(tiles_3857, tzone)
 w
 #> $first_ds
 #> [1] "2023-02-06"
@@ -118,9 +135,9 @@ w
 #> $latest_label
 #> [1] "February 7, 2023 3am"
 
-lon_limits <- range(fb_data_bing$longitude)
-lat_limits <- range(fb_data_bing$latitude)
-zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
+lon_limits <- range(tiles_3857$longitude)
+lat_limits <- range(tiles_3857$latitude)
+zoom <- 10 # lowered automatically if the extent is too wide
 
 # One colour scale for both windows
 diff_limits <- shared_limits(
