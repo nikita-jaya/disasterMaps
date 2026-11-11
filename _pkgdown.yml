@@ -9,9 +9,7 @@ reference:
   - analyze_dataset
   - load_population
   - load_movement
-  - build_moved
   - fit_zoom
-  - build_tiles
   - format_time
   - compute_windows
 

@@ -98,14 +98,16 @@ for (type in names(disasters)) {
     w <- compute_windows(fb, "America/Los_Angeles")
     expect_equal(w$first_hour, "0000")
     expect_equal(w$latest_hour, "1600")
-    tiles <- suppressMessages(build_tiles(fb, re_run = TRUE,
-                                          cache_dir = withr::local_tempdir()))
+    tiles <- suppressMessages(load_population(synthetic_dir(type, "population"),
+                                              re_run = TRUE,
+                                              cache_dir = withr::local_tempdir()))
     expect_s3_class(tiles, "sf")
     expect_equal(nrow(tiles), nrow(fb))
+    expect_identical(compute_windows(tiles, "America/Los_Angeles"), w)
 
-    mp <- read_synthetic(type, "movement")
-    moved <- suppressMessages(build_moved(mp, re_run = TRUE,
-                                          cache_dir = withr::local_tempdir()))
+    moved <- suppressMessages(load_movement(synthetic_dir(type, "movement"),
+                                            re_run = TRUE,
+                                            cache_dir = withr::local_tempdir()))
     expect_gt(nrow(moved), 0)
     expect_true(all(moved$start_quadkey != moved$end_quadkey))
   })

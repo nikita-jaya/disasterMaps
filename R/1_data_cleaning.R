@@ -1,7 +1,4 @@
-######------- Data Cleaning Functions --------#######
-
-# Meta's "\N" missing-value token is converted to NA at read time via the
-# `na=` argument in aggregate_csvs() (see #3).
+###### ------- Data Cleaning Functions --------#######
 
 
 ###### ----- Aggregate CSVs ------ ######
@@ -29,34 +26,27 @@ aggregate_csvs <- function(path_parts,
                            prefix = "",
                            calculate_county_change = FALSE,
                            county_group_cols = c("county_geoid", "county_name", "county_state", "ds")) {
-  
+
   data_dir <- do.call(here::here, as.list(path_parts))
-  
-  #cat("Reading from:", data_dir, "\n")
-  
+
   if (!dir.exists(data_dir)) {
     stop("Directory does not exist: ", data_dir)
   }
-  
+
   csv_files <- list.files(
     path = data_dir,
     pattern = "\\.csv$",
     full.names = TRUE
   )
-  
+
   if (length(csv_files) == 0) {
     stop("No CSV files found in: ", data_dir)
   }
-  
-  #cat("Found", length(csv_files), "files\n")
-  
-  # (#3) Treat Meta's "\N" null token (and blanks) as NA at parse time. Otherwise
-  # any numeric column containing a "\N" is read as character and silently breaks
-  # downstream min()/mean()/median()/fill scales.
-  # Quadkeys must stay character (leading zeros). Only name the quadkey columns
-  # a file actually has: population CSVs have `quadkey`, movement CSVs have
-  # `start_quadkey`/`end_quadkey`, and readr warns about any named column that
-  # is missing.
+
+  # Quadkeys are read as character so leading zeros survive. Only the quadkey
+  # columns a file actually has are named, because readr warns about missing
+  # ones: population CSVs have `quadkey`, movement CSVs have `start_quadkey`
+  # and `end_quadkey`.
   quadkey_cols <- c("quadkey", "start_quadkey", "end_quadkey")
 
   combined_data <- lapply(csv_files, function(f) {
@@ -67,6 +57,8 @@ aggregate_csvs <- function(path_parts,
       c(stats::setNames(rep(list(col_character()), length(present)), present),
         list(.default = col_guess()))
     )
+    # Meta writes nulls as "\N". Treat it (and blanks) as NA, otherwise a single
+    # "\N" turns a numeric column into character.
     read_csv(
       f,
       col_types = col_spec,
@@ -76,20 +68,18 @@ aggregate_csvs <- function(path_parts,
       mutate(source_file = basename(f))
   }) |>
     bind_rows()
-  
-  
+
   if (dedupe) {
     combined_data <- combined_data |> distinct()
   }
-  
-  
-  # Extract date and time from file names
+
+  # File names look like <prefix>_YYYY-MM-DD_HHMM.csv
   combined_data <- combined_data |>
     mutate(
       ds = as.Date(sub(".*_(\\d{4}-\\d{2}-\\d{2})_.*", "\\1", source_file)),
       hour = sub(".*_(\\d{4}-\\d{2}-\\d{2})_(\\d{4}).*", "\\2", source_file)
     )
-  
+
   return(combined_data)
 }
 
@@ -106,37 +96,32 @@ analyze_dataset <- function(df) {
   list(
     missing = df |>
       summarise(across(everything(), ~mean(is.na(.)))),
-    
+
     numeric_summary = df |>
       summarise(across(where(is.numeric),
                        list(mean = \(x) mean(x, na.rm = TRUE),
                             sd   = \(x) sd(x, na.rm = TRUE)))),
-    
+
     n_rows = nrow(df),
     n_cols = ncol(df)
   )
 }
-###### ------- Movement Between Places w/o Aggregation ----#####
 
 
-# ============================================================================
-# Pipeline steps  —  sourcing this file only DEFINES these; nothing heavy runs
-# until you call them. Each step reads its cached .Rds if present, otherwise
-# rebuilds from the raw CSVs and saves the cache (self-healing). Each RETURNS its
-# object so the caller (a Colab notebook cell, or the report's setup chunk)
-# assigns the global the plotting functions expect: fb_data_bing, mp_data_bing,
-# moved, tiles_3857, fires. Pass re_run = TRUE to force a rebuild (e.g. after
-# adding new CSVs).
-# ============================================================================
+###### ----- Cached Pipeline Steps ------ ######
 
-# Where the .Rds caches live. Default "." = working dir (your current caches).
-# To regenerate a fresh set WITHOUT overwriting the current ones, point a step at
-# another folder via cache_dir, e.g.:
-#   run_dir <- format(Sys.time(), "rds_%Y%m%d_%H%M%S")   # timestamped folder
-#   fb_data_bing <- load_population(re_run = TRUE, cache_dir = run_dir)
+# load_population() and load_movement() each read their cached .Rds if it
+# exists, and otherwise build from the raw CSVs and save the cache. Pass
+# re_run = TRUE to force a rebuild, e.g. after adding new CSVs. The plot
+# functions expect the results in the globals `tiles_3857` and `moved`.
+
+# Folder for the .Rds caches. To build a fresh set without overwriting the
+# current one, pass another folder as `cache_dir`:
+#   run_dir    <- format(Sys.time(), "rds_%Y%m%d_%H%M%S")
+#   tiles_3857 <- load_population(re_run = TRUE, cache_dir = run_dir)
 rds_cache_dir <- "."
 
-# Resolve <dir>/<file>, creating <dir> if needed; returns the full cache path.
+# Returns <dir>/<file>, creating <dir> if needed.
 
 #' Title
 #'
@@ -151,8 +136,12 @@ cache_path <- function(file, dir = rds_cache_dir) {
   file.path(dir, file)
 }
 
+# Population tiles as EPSG:3857 polygons, one row per quadkey and time window,
+# with the metric columns renamed for the plots.
+
 #' Title
 #'
+#' @param path_parts
 #' @param re_run
 #' @param cache_dir
 #' @param cache
@@ -161,27 +150,42 @@ cache_path <- function(file, dir = rds_cache_dir) {
 #' @export
 #'
 #' @examples
-load_population <- function(re_run = FALSE, cache_dir = rds_cache_dir,
-                            cache = "fb_data_bing.Rds") {
+load_population <- function(path_parts = "fb_pop_crisis_bing_tiles",
+                            re_run = FALSE, cache_dir = rds_cache_dir,
+                            cache = "tiles.Rds") {
   path <- cache_path(cache, cache_dir)
-  if (re_run || !file.exists(path)) {
-    message("Building population data from CSVs -> ", path)
-    #Selina: no drop_na(n_difference) — an explicit NA is useful (it means < 11 users).
-    fb <- aggregate_csvs(
-      path_parts = c("fb_pop_crisis_bing_tiles"),
-      lat_col = "latitude",
-      lon_col = "longitude"
-    )
-    saveRDS(fb, path)
-    fb
-  } else {
+  if (!re_run && file.exists(path)) {
     message("Loading cached ", path)
-    readRDS(path)
+    return(readRDS(path))
   }
+
+  # NA in n_difference is kept on purpose: it means fewer than 11 users.
+  fb <- aggregate_csvs(path_parts)
+
+  # A tile's polygon depends only on its quadkey, not the time window, so each
+  # distinct quadkey is polygonised once and joined back to every row. This is
+  # far faster than polygonising every row of a multi-window dataset.
+  qk <- dplyr::distinct(fb, quadkey)
+  qk <- qk[!is.na(qk$quadkey) & nzchar(qk$quadkey), , drop = FALSE]
+  message("Building tile polygons for ", nrow(qk), " distinct quadkeys ",
+          "(", nrow(fb), " rows total) -> ", path)
+
+  geom  <- quadkey_df_to_polygon(qk)["quadkey"]   # keep only quadkey + geometry
+  tiles <- sf::st_as_sf(dplyr::left_join(geom, fb, by = "quadkey")) |>
+    sf::st_transform(3857) |>
+    dplyr::rename(`Difference between baseline and crisis` = n_difference,
+                  `# Users During Crisis` = n_crisis)
+
+  saveRDS(tiles, path)
+  tiles
 }
+
+# Movement between tiles, keeping only rows where the start and end differ,
+# with the metric columns renamed for the plots.
 
 #' Title
 #'
+#' @param path_parts
 #' @param re_run
 #' @param cache_dir
 #' @param cache
@@ -190,76 +194,38 @@ load_population <- function(re_run = FALSE, cache_dir = rds_cache_dir,
 #' @export
 #'
 #' @examples
-load_movement <- function(re_run = FALSE, cache_dir = rds_cache_dir,
-                          cache = "mp_data_bing.Rds") {
+load_movement <- function(path_parts = "fb_move_crisis_bing_tiles",
+                          re_run = FALSE, cache_dir = rds_cache_dir,
+                          cache = "moved.Rds") {
   path <- cache_path(cache, cache_dir)
-  if (re_run || !file.exists(path)) {
-    message("Building movement data from CSVs -> ", path)
-    mp <- aggregate_csvs(path_parts = c("fb_move_crisis_bing_tiles"))
-    saveRDS(mp, path)
-    mp
-  } else {
+  if (!re_run && file.exists(path)) {
     message("Loading cached ", path)
-    readRDS(path)
+    return(readRDS(path))
   }
-}
 
-#' Title
-#'
-#' @param mp_data_bing
-#' @param re_run
-#' @param cache_dir
-#' @param cache
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-build_moved <- function(mp_data_bing, re_run = FALSE, cache_dir = rds_cache_dir,
-                        cache = "moved.Rds") {
-  path <- cache_path(cache, cache_dir)
-  if (re_run || !file.exists(path)) {
-    message("Building `moved` from movement data -> ", path)
-    moved <- mp_data_bing |>
-      #Selina: filter is "OR" (not "AND") — keep a move if EITHER lon OR lat changed,
-      #so pure East/West or North/South moves are not incorrectly dropped.
-      filter(start_longitude != end_longitude | start_latitude != end_latitude) |>
-      #Selina: keep explicit NA (it means < 11 users) — no drop_na here.
-      rename(`Difference between baseline and crisis` = n_difference) |>
-      rename(`# Users During Crisis` = n_crisis)
-    saveRDS(moved, path)
-    moved
-  } else {
-    message("Loading cached ", path)
-    readRDS(path)
-  }
+  message("Building movement data from CSVs -> ", path)
+  moved <- aggregate_csvs(path_parts) |>
+    # Keep a move if EITHER coordinate changed, so pure east/west or
+    # north/south moves are not dropped.
+    filter(start_longitude != end_longitude | start_latitude != end_latitude) |>
+    # NA in n_difference is kept on purpose: it means fewer than 11 users.
+    rename(`Difference between baseline and crisis` = n_difference,
+           `# Users During Crisis` = n_crisis)
+
+  saveRDS(moved, path)
+  moved
 }
 
 
+###### ----- Basemap ------ ######
 
-###### ------- Facebook Population w/o Aggregation ----#####
-
-
-
-
-# Local cache dir for basemap tiles so repeated renders reuse them instead of
-# re-downloading — and so a warmed cache lets the report render offline (#5).
-# The report's four maps all share one lon/lat extent, so only the first plot
-# hits the network; the rest read this cache. (The old global zoom-6 `osm`
-# download was removed — every plot fetches a basemap for its own extent.)
+# Local cache for basemap tiles, so repeated renders reuse them and a warmed
+# cache lets the report render offline.
 tile_cache_dir <- "maptiles_cache"
 
-# ---------------------------------------------------------------------------
-# fit_zoom() — cap basemap zoom to a tile budget (OOM guard).
-# WHY: a data-driven extent (e.g. movement_plot3(direction="all") framing a
-#      long-haul flow) can span the whole region; at a high zoom that is thousands
-#      of tiles, which stitches into a huge raster and crashes the runtime. This
-#      lowers the zoom until the estimated tile count is within max_tiles.
-#  lon/lat   num c(min,max) of the extent (degrees).
-#  zoom      int requested basemap zoom.
-#  max_tiles int approx tile-count ceiling (default 250).
-#  returns   int a zoom <= requested; messages if it had to reduce.
-# ---------------------------------------------------------------------------
+# Lowers the basemap zoom until the extent fits in roughly `max_tiles` tiles.
+# A wide extent at a high zoom means thousands of tiles, which stitch into a
+# huge raster and can crash R. Returns a zoom no higher than the one requested.
 
 #' Title
 #'
@@ -278,7 +244,7 @@ fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
   while (z > 1) {
     deg_per_tile <- 360 / (2^z)
     tx <- max(1, ceiling(dlon / deg_per_tile))
-    ty <- max(1, ceiling(dlat / deg_per_tile))   # rough but conservative for a budget
+    ty <- max(1, ceiling(dlat / deg_per_tile))   # rough but conservative
     if (tx * ty <= max_tiles) break
     z <- z - 1
   }
@@ -288,46 +254,11 @@ fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
             max_tiles, " tiles.")
   z
 }
-# Tile-polygon step: quadkey squares → EPSG:3857, with the two renames the plots
-# use. Rebuild if forced or the cache is missing. If you rebuilt fb_data_bing
-# (e.g. new CSVs), pass re_run = TRUE here too so the tiles stay in sync.
 
-#' Title
-#'
-#' @param fb_data_bing
-#' @param re_run
-#' @param cache_dir
-#' @param cache
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-build_tiles <- function(fb_data_bing, re_run = FALSE, cache_dir = rds_cache_dir,
-                        cache = "tiles.Rds") {
-  path <- cache_path(cache, cache_dir)
-  if (re_run || !file.exists(path)) {
-    # PERF: a tile's polygon depends ONLY on its quadkey, not the time window, so
-    # polygonise the DISTINCT quadkeys once and join back to every row. With ~10
-    # windows that is ~10x less geometry work (more if quadkey_df_to_polygon is
-    # superlinear) - this is the fix for build_tiles() stalling for tens of minutes
-    # on the full multi-window dataset (~200k rows / ~20k distinct quadkeys).
-    qk <- dplyr::distinct(fb_data_bing, quadkey)
-    qk <- qk[!is.na(qk$quadkey) & nzchar(qk$quadkey), , drop = FALSE]   # guard junk keys
-    message("Building tile polygons for ", nrow(qk), " distinct quadkeys ",
-            "(", nrow(fb_data_bing), " rows total) -> ", path)
-    geom  <- quadkey_df_to_polygon(qk)          # sf: one polygon per quadkey
-    geom  <- geom["quadkey"]                     # keep quadkey + geometry only (avoid col clashes)
-    tiles <- sf::st_as_sf(dplyr::left_join(geom, fb_data_bing, by = "quadkey"))  # sf, all rows + attributes
-    saveRDS(tiles, path)
-  } else {
-    message("Loading cached ", path)
-    tiles <- readRDS(path)
-  }
-  sf::st_transform(tiles, 3857) |>
-    dplyr::rename(`Difference between baseline and crisis` = n_difference) |>
-    dplyr::rename(`# Users During Crisis` = n_crisis)
-}
+
+###### ----- Time Windows ------ ######
+
+# Formats a Meta timestamp (Pacific time) in `tzone`, e.g. "January 7, 2025 8am".
 
 #' Title
 #'
@@ -344,27 +275,27 @@ format_time <- function(ds, hour, tzone) {
     paste(ds, hour),
     tz = "America/Los_Angeles"
   )
-  
+
   datetime_local <- with_tz(
     datetime,
     tzone = tzone
   )
-  
+
   formatted <- format(
     datetime_local,
     "%B %d, %Y %I%p"
   )
-  
-  
+
+  # Drop leading zeros and lower-case am/pm
   formatted <- gsub(" 0", " ", formatted)
   formatted <- gsub("AM", "am", formatted)
   formatted <- gsub("PM", "pm", formatted)
-  
+
   formatted
 }
 
-# Earliest & latest time windows actually present in the data, plus pretty labels.
-# Lives here (not in the .qmd) so the notebook and the report share one source.
+# Earliest and latest time windows in the data, with readable labels. Accepts
+# a plain data frame or the sf returned by load_population().
 
 #' Title
 #'
@@ -376,6 +307,7 @@ format_time <- function(ds, hour, tzone) {
 #'
 #' @examples
 compute_windows <- function(fb_data_bing, tzone) {
+  if (inherits(fb_data_bing, "sf")) fb_data_bing <- sf::st_drop_geometry(fb_data_bing)
   aw <- fb_data_bing |>
     dplyr::distinct(ds, hour) |>
     dplyr::arrange(ds, hour)

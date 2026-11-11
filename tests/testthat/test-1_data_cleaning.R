@@ -145,71 +145,84 @@ test_that("cache_path builds the path and creates the directory", {
   expect_true(dir.exists(dir))
 })
 
-# ---- load_population / load_movement ---------------------------------------
+# ---- load_population -------------------------------------------------------
 
 test_that("load_population reads an existing cache without rebuilding", {
   dir <- withr::local_tempdir()
   cached <- data.frame(quadkey = "0231", n = 1)
-  saveRDS(cached, file.path(dir, "fb_data_bing.Rds"))
+  saveRDS(cached, file.path(dir, "tiles.Rds"))
   local_mocked_bindings(aggregate_csvs = function(...) stop("should not rebuild"))
 
   expect_message(out <- load_population(cache_dir = dir), "Loading cached")
   expect_identical(out, cached)
 })
 
-test_that("load_population rebuilds from CSVs when the cache is missing and saves it", {
-  dir <- withr::local_tempdir()
-  built <- data.frame(quadkey = "0232", n = 2)
-  seen <- NULL
-  local_mocked_bindings(aggregate_csvs = function(path_parts, ...) {
-    seen <<- list(path_parts = path_parts, ...)
-    built
-  })
-
-  expect_message(out <- load_population(cache_dir = dir), "Building population data")
-  expect_identical(out, built)
-  expect_identical(seen$path_parts, "fb_pop_crisis_bing_tiles")
-  expect_identical(seen$lat_col, "latitude")
-  expect_identical(seen$lon_col, "longitude")
-  expect_identical(readRDS(file.path(dir, "fb_data_bing.Rds")), built)
-})
-
-test_that("load_population re_run = TRUE ignores an existing cache", {
-  dir <- withr::local_tempdir()
-  saveRDS(data.frame(old = 1), file.path(dir, "fb_data_bing.Rds"))
-  local_mocked_bindings(aggregate_csvs = function(...) data.frame(new = 2))
-
-  out <- suppressMessages(load_population(re_run = TRUE, cache_dir = dir))
-  expect_named(out, "new")
-  expect_named(readRDS(file.path(dir, "fb_data_bing.Rds")), "new")
-})
-
-test_that("load_movement reads the cache, or rebuilds from the movement folder", {
+test_that("load_population reads the population folder by default", {
   dir <- withr::local_tempdir()
   seen <- NULL
   local_mocked_bindings(aggregate_csvs = function(path_parts, ...) {
     seen <<- path_parts
-    data.frame(m = 1)
+    make_pop_data()
   })
 
-  expect_message(out <- load_movement(cache_dir = dir), "Building movement data")
-  expect_identical(seen, "fb_move_crisis_bing_tiles")
-  expect_true(file.exists(file.path(dir, "mp_data_bing.Rds")))
-
-  seen <- NULL
-  expect_message(out2 <- load_movement(cache_dir = dir), "Loading cached")
-  expect_null(seen)
-  expect_identical(out2, out)
+  suppressMessages(load_population(cache_dir = dir))
+  expect_identical(seen, "fb_pop_crisis_bing_tiles")
 })
 
-test_that("load_* honour a custom cache file name", {
+test_that("load_population polygonises quadkeys into an EPSG:3857 sf with renamed columns", {
   dir <- withr::local_tempdir()
-  local_mocked_bindings(aggregate_csvs = function(...) data.frame(m = 1))
-  suppressMessages(load_movement(cache_dir = dir, cache = "custom.Rds"))
-  expect_true(file.exists(file.path(dir, "custom.Rds")))
+  pop <- make_pop_data()
+  local_mocked_bindings(aggregate_csvs = function(...) pop)
+
+  expect_message(
+    tiles <- load_population(cache_dir = dir),
+    "4 distinct quadkeys \\(8 rows total\\)"
+  )
+
+  expect_s3_class(tiles, "sf")
+  expect_equal(sf::st_crs(tiles)$epsg, 3857)
+  expect_equal(nrow(tiles), nrow(pop))
+  expect_true(all(sf::st_geometry_type(tiles) == "POLYGON"))
+  expect_true(all(c("Difference between baseline and crisis", "# Users During Crisis") %in% names(tiles)))
+  expect_false(any(c("n_difference", "n_crisis") %in% names(tiles)))
+  expect_setequal(tiles$quadkey, unique(pop$quadkey))
 })
 
-# ---- build_moved -----------------------------------------------------------
+test_that("load_population drops rows with missing or empty quadkeys", {
+  dir <- withr::local_tempdir()
+  pop <- make_pop_data()
+  pop$quadkey[1] <- NA
+  pop$quadkey[2] <- ""
+  local_mocked_bindings(aggregate_csvs = function(...) pop)
+
+  tiles <- suppressMessages(load_population(cache_dir = dir))
+  expect_false(any(is.na(tiles$quadkey) | tiles$quadkey == ""))
+  expect_equal(nrow(tiles), nrow(pop) - 2)
+})
+
+test_that("load_population caches the finished tiles and reuses them", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(aggregate_csvs = function(...) make_pop_data())
+  first <- suppressMessages(load_population(cache_dir = dir))
+  expect_identical(readRDS(file.path(dir, "tiles.Rds")), first)
+
+  local_mocked_bindings(aggregate_csvs = function(...) stop("should not rebuild"))
+  expect_message(second <- load_population(cache_dir = dir), "Loading cached")
+  expect_identical(second, first)
+  expect_equal(sf::st_crs(second)$epsg, 3857)
+})
+
+test_that("load_population re_run = TRUE ignores an existing cache", {
+  dir <- withr::local_tempdir()
+  saveRDS(data.frame(old = 1), file.path(dir, "tiles.Rds"))
+  local_mocked_bindings(aggregate_csvs = function(...) make_pop_data())
+
+  out <- suppressMessages(load_population(re_run = TRUE, cache_dir = dir))
+  expect_s3_class(out, "sf")
+  expect_s3_class(readRDS(file.path(dir, "tiles.Rds")), "sf")
+})
+
+# ---- load_movement ---------------------------------------------------------
 
 make_movement <- function() {
   data.frame(
@@ -222,30 +235,64 @@ make_movement <- function() {
   )
 }
 
-test_that("build_moved keeps moves where EITHER coordinate changed", {
+test_that("load_movement reads the movement folder by default", {
   dir <- withr::local_tempdir()
-  out <- suppressMessages(build_moved(make_movement(), cache_dir = dir))
+  seen <- NULL
+  local_mocked_bindings(aggregate_csvs = function(path_parts, ...) {
+    seen <<- path_parts
+    make_movement()
+  })
 
-  # row 1 (no change) and row 4 (no change) dropped; E/W-only and N/S-only kept
+  expect_message(load_movement(cache_dir = dir), "Building movement data")
+  expect_identical(seen, "fb_move_crisis_bing_tiles")
+})
+
+test_that("load_movement keeps moves where EITHER coordinate changed", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(aggregate_csvs = function(...) make_movement())
+  out <- suppressMessages(load_movement(cache_dir = dir))
+
+  # rows 1 and 4 (no change) dropped; E/W-only and N/S-only kept
   expect_equal(nrow(out), 2)
   expect_equal(out$end_longitude, c(-117, -118))
   expect_equal(out$end_latitude, c(34, 35))
 })
 
-test_that("build_moved renames the metric columns and keeps explicit NA", {
+test_that("load_movement renames the metric columns and keeps explicit NA", {
   dir <- withr::local_tempdir()
-  out <- suppressMessages(build_moved(make_movement(), cache_dir = dir))
+  local_mocked_bindings(aggregate_csvs = function(...) make_movement())
+  out <- suppressMessages(load_movement(cache_dir = dir))
+
   expect_true(all(c("Difference between baseline and crisis", "# Users During Crisis") %in% names(out)))
   expect_false(any(c("n_difference", "n_crisis") %in% names(out)))
   expect_true(anyNA(out$`Difference between baseline and crisis`))
 })
 
-test_that("build_moved caches its result and reuses it", {
+test_that("load_movement caches its result and reuses it", {
   dir <- withr::local_tempdir()
-  expect_message(first <- build_moved(make_movement(), cache_dir = dir), "Building `moved`")
-  expect_true(file.exists(file.path(dir, "moved.Rds")))
-  expect_message(second <- build_moved(data.frame(), cache_dir = dir), "Loading cached")
+  local_mocked_bindings(aggregate_csvs = function(...) make_movement())
+  first <- suppressMessages(load_movement(cache_dir = dir))
+  expect_identical(readRDS(file.path(dir, "moved.Rds")), first)
+
+  local_mocked_bindings(aggregate_csvs = function(...) stop("should not rebuild"))
+  expect_message(second <- load_movement(cache_dir = dir), "Loading cached")
   expect_identical(second, first)
+})
+
+test_that("load_movement re_run = TRUE ignores an existing cache", {
+  dir <- withr::local_tempdir()
+  saveRDS(data.frame(old = 1), file.path(dir, "moved.Rds"))
+  local_mocked_bindings(aggregate_csvs = function(...) make_movement())
+
+  out <- suppressMessages(load_movement(re_run = TRUE, cache_dir = dir))
+  expect_equal(nrow(out), 2)
+})
+
+test_that("load_* honour a custom cache file name", {
+  dir <- withr::local_tempdir()
+  local_mocked_bindings(aggregate_csvs = function(...) make_movement())
+  suppressMessages(load_movement(cache_dir = dir, cache = "custom.Rds"))
+  expect_true(file.exists(file.path(dir, "custom.Rds")))
 })
 
 # ---- fit_zoom --------------------------------------------------------------
@@ -283,45 +330,6 @@ test_that("fit_zoom is order-independent for lon/lat inputs", {
     suppressMessages(fit_zoom(c(-110, -125), c(42, 32), zoom = 12)),
     suppressMessages(fit_zoom(c(-125, -110), c(32, 42), zoom = 12))
   )
-})
-
-# ---- build_tiles -----------------------------------------------------------
-
-test_that("build_tiles polygonises quadkeys into an EPSG:3857 sf with renamed columns", {
-  dir <- withr::local_tempdir()
-  pop <- make_pop_data()
-  expect_message(
-    tiles <- build_tiles(pop, cache_dir = dir),
-    "4 distinct quadkeys \\(8 rows total\\)"
-  )
-
-  expect_s3_class(tiles, "sf")
-  expect_equal(sf::st_crs(tiles)$epsg, 3857)
-  expect_equal(nrow(tiles), nrow(pop))
-  expect_true(all(sf::st_geometry_type(tiles) == "POLYGON"))
-  expect_true(all(c("Difference between baseline and crisis", "# Users During Crisis") %in% names(tiles)))
-  expect_false(any(c("n_difference", "n_crisis") %in% names(tiles)))
-  expect_setequal(tiles$quadkey, unique(pop$quadkey))
-})
-
-test_that("build_tiles drops rows with missing or empty quadkeys", {
-  dir <- withr::local_tempdir()
-  pop <- make_pop_data()
-  pop$quadkey[1] <- NA
-  pop$quadkey[2] <- ""
-  tiles <- suppressMessages(build_tiles(pop, cache_dir = dir))
-  expect_false(any(is.na(tiles$quadkey) | tiles$quadkey == ""))
-  expect_equal(nrow(tiles), nrow(pop) - 2)
-})
-
-test_that("build_tiles caches the unprojected tiles and reloads them", {
-  dir <- withr::local_tempdir()
-  first <- suppressMessages(build_tiles(make_pop_data(), cache_dir = dir))
-  expect_true(file.exists(file.path(dir, "tiles.Rds")))
-
-  expect_message(second <- build_tiles(NULL, cache_dir = dir), "Loading cached")
-  expect_equal(sf::st_crs(second)$epsg, 3857)
-  expect_equal(nrow(second), nrow(first))
 })
 
 # ---- format_time -----------------------------------------------------------
@@ -378,6 +386,16 @@ test_that("compute_windows orders hours within the same day", {
   w <- compute_windows(pop, tzone = "UTC")
   expect_identical(w$first_hour, "0000")
   expect_identical(w$latest_hour, "1600")
+})
+
+test_that("compute_windows accepts the sf from load_population", {
+  dir <- withr::local_tempdir()
+  pop <- make_pop_data()
+  local_mocked_bindings(aggregate_csvs = function(...) pop)
+  tiles <- suppressMessages(load_population(cache_dir = dir))
+
+  expect_identical(compute_windows(tiles, tzone = "UTC"),
+                   compute_windows(pop, tzone = "UTC"))
 })
 
 test_that("compute_windows fails loudly on empty data", {

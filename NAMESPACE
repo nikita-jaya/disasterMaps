@@ -2,8 +2,6 @@
 
 export(aggregate_csvs)
 export(analyze_dataset)
-export(build_moved)
-export(build_tiles)
 export(compute_windows)
 export(disaster_limits)
 export(fetch_earthquakes)

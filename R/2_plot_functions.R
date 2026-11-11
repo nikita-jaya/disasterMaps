@@ -96,8 +96,8 @@ population_plot <- function(
   if (metric == "zscore" && !("z_score" %in% names(tiles_3857))) {
     stop(
       "population_plot(metric='zscore'): column `z_score` not in tiles_3857. ",
-      "Rebuild with build_tiles(fb_data_bing, re_run = TRUE); if still missing, ",
-      "quadkey_df_to_polygon dropped it - join z_score back from fb_data_bing by quadkey."
+      "Rebuild with load_population(re_run = TRUE); if still missing, ",
+      "quadkey_df_to_polygon dropped it - join z_score back from the raw CSVs by quadkey."
     )
   }
   
