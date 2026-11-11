@@ -96,7 +96,7 @@ moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
 ``` r
 
 tiles_3857 <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
-#> Building tile polygons for 3213 distinct quadkeys (6423 rows total) -> /tmp/RtmphHM0se/tiles.Rds
+#> Building tile polygons for 3213 distinct quadkeys (6423 rows total) -> /tmp/Rtmp4tT4P5/tiles.Rds
 
 w <- compute_windows(fb_data_bing, tzone)
 w

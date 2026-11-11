@@ -2,8 +2,6 @@
 
 ## Data Cleaning
 
-- [`clean_numeric()`](https://nikita-jaya.github.io/disasterMaps/reference/clean_numeric.md)
-  : Title
 - [`aggregate_csvs()`](https://nikita-jaya.github.io/disasterMaps/reference/aggregate_csvs.md)
   : Title
 - [`analyze_dataset()`](https://nikita-jaya.github.io/disasterMaps/reference/analyze_dataset.md)

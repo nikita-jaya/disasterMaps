@@ -50,7 +50,7 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997019767761 seconds
+    Waiting 14.999694108963 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
     OpenStreetMap: HTTP 502 Bad Gateway.
@@ -71,7 +71,10 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997794628143 seconds
+    Waiting 14.9997725486755 seconds
+
+    Warning in value[[3L]](cond): Could not download highway data from
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-3-1.png)
 
@@ -91,7 +94,7 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              )
 ```
 
-    Waiting 14.9997744560242 seconds
+    Waiting 14.999785900116 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
     OpenStreetMap: HTTP 502 Bad Gateway.
@@ -112,7 +115,10 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 )
 ```
 
-    Waiting 14.999748468399 seconds
+    Waiting 14.9997680187225 seconds
+
+    Warning in value[[3L]](cond): Could not download highway data from
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-5-1.png)
 
@@ -164,7 +170,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997773170471 seconds
+    Waiting 14.99977850914 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
     OpenStreetMap: HTTP 502 Bad Gateway.
