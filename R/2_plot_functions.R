@@ -624,7 +624,7 @@ population_plot <- function(
       fill = "white",
       size = 4,
       fontface = "bold",
-      label.size = 0.3,
+      linewidth = 0.3,
       inherit.aes = FALSE
     )
   }

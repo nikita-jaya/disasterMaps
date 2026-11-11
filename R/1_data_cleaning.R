@@ -66,15 +66,23 @@ aggregate_csvs <- function(path_parts,
   # (#3) Treat Meta's "\N" null token (and blanks) as NA at parse time. Otherwise
   # any numeric column containing a "\N" is read as character and silently breaks
   # downstream min()/mean()/median()/fill scales.
+  # Quadkeys must stay character (leading zeros). Only name the quadkey columns
+  # a file actually has: population CSVs have `quadkey`, movement CSVs have
+  # `start_quadkey`/`end_quadkey`, and readr warns about any named column that
+  # is missing.
+  quadkey_cols <- c("quadkey", "start_quadkey", "end_quadkey")
+
   combined_data <- lapply(csv_files, function(f) {
+    header <- names(read_csv(f, n_max = 0, show_col_types = FALSE))
+    present <- intersect(quadkey_cols, header)
+    col_spec <- do.call(
+      cols,
+      c(stats::setNames(rep(list(col_character()), length(present)), present),
+        list(.default = col_guess()))
+    )
     read_csv(
       f,
-      col_types = cols(
-        quadkey = col_character(),
-        start_quadkey = col_character(),
-        end_quadkey = col_character(),
-        .default = col_guess()
-      ),
+      col_types = col_spec,
       show_col_types = FALSE,
       na = c("", "NA", "\\N")
     ) |>
@@ -114,8 +122,8 @@ analyze_dataset <- function(df) {
     
     numeric_summary = df |>
       summarise(across(where(is.numeric),
-                       list(mean = mean, sd = sd),
-                       na.rm = TRUE)),
+                       list(mean = \(x) mean(x, na.rm = TRUE),
+                            sd   = \(x) sd(x, na.rm = TRUE)))),
     
     n_rows = nrow(df),
     n_cols = ncol(df)
