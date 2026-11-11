@@ -87,15 +87,15 @@ head(mp_data_bing)
 #> #   percent_change <dbl>, z_score <dbl>, ds <date>, source_file <chr>,
 #> #   hour <chr>
 
-moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
+moved <- load_movement(move_dir, re_run = TRUE, cache_dir = tempdir())
 ```
 
 ## Tiles and time windows
 
 ``` r
 
-tiles_3857 <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
-#> Building tile polygons for 246 distinct quadkeys (492 rows total) -> /tmp/RtmpAkfifg/tiles.Rds
+tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = tempdir())
+#> Building tile polygons for 246 distinct quadkeys (492 rows total) -> /tmp/RtmpISTFd5/tiles.Rds
 
 w <- compute_windows(fb_data_bing, tzone)
 w

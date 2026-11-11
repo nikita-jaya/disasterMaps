@@ -6,9 +6,10 @@ Title
 
 ``` r
 load_population(
+  path_parts = "fb_pop_crisis_bing_tiles",
   re_run = FALSE,
   cache_dir = rds_cache_dir,
-  cache = "fb_data_bing.Rds"
+  cache = "tiles.Rds"
 )
 ```
 

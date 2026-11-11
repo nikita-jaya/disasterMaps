@@ -153,14 +153,14 @@
 <span><span class="co">#&gt; #   percent_change &lt;dbl&gt;, z_score &lt;dbl&gt;, ds &lt;date&gt;, source_file &lt;chr&gt;,</span></span>
 <span><span class="co">#&gt; #   hour &lt;chr&gt;</span></span>
 <span></span>
-<span><span class="va">moved</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_moved.html">build_moved</a></span><span class="op">(</span><span class="va">mp_data_bing</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">moved</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_movement.html">load_movement</a></span><span class="op">(</span><span class="va">move_dir</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 </section><section class="level2"><h2 id="tiles-and-time-windows">Tiles and time windows<a class="anchor" aria-label="anchor" href="#tiles-and-time-windows"></a>
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tiles_3857</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_tiles.html">build_tiles</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Building tile polygons for 246 distinct quadkeys (492 rows total) -&gt; /tmp/RtmpAkfifg/tiles.Rds</span></span>
+<code class="sourceCode R"><span><span class="va">tiles_3857</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_population.html">load_population</a></span><span class="op">(</span><span class="va">data_dir</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Building tile polygons for 246 distinct quadkeys (492 rows total) -&gt; /tmp/RtmpISTFd5/tiles.Rds</span></span>
 <span></span>
 <span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_windows.html">compute_windows</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, <span class="va">tzone</span><span class="op">)</span></span>
 <span><span class="va">w</span></span>

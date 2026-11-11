@@ -10,11 +10,7 @@
   : Title
 - [`load_movement()`](https://nikita-jaya.github.io/disasterMaps/reference/load_movement.md)
   : Title
-- [`build_moved()`](https://nikita-jaya.github.io/disasterMaps/reference/build_moved.md)
-  : Title
 - [`fit_zoom()`](https://nikita-jaya.github.io/disasterMaps/reference/fit_zoom.md)
-  : Title
-- [`build_tiles()`](https://nikita-jaya.github.io/disasterMaps/reference/build_tiles.md)
   : Title
 - [`format_time()`](https://nikita-jaya.github.io/disasterMaps/reference/format_time.md)
   : Title

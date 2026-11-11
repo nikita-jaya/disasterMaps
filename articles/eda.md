@@ -19,15 +19,13 @@ tzone <- c(fire = "America/Los_Angeles",
 pop_dir  <- system.file("extdata", disaster, "population", package = "disasterMaps")
 move_dir <- system.file("extdata", disaster, "movement", package = "disasterMaps")
 
-fb_data_bing <- aggregate_csvs(pop_dir)
-tiles_3857   <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
-w <- compute_windows(fb_data_bing, tzone)
+tiles_3857 <- load_population(pop_dir, re_run = TRUE, cache_dir = tempdir())
+moved      <- load_movement(move_dir, re_run = TRUE, cache_dir = tempdir())
+w <- compute_windows(tiles_3857, tzone)
 attach(w)
-mp_data_bing <- aggregate_csvs(move_dir)
-moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
 
-lon_limits <- range(fb_data_bing$longitude)
-lat_limits <- range(fb_data_bing$latitude)
+lon_limits <- range(tiles_3857$longitude)
+lat_limits <- range(tiles_3857$latitude)
 zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
 
 # OpenStreetMap roads drawn on top: "none", "major", "secondary" or "all"
@@ -50,10 +48,10 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.999694108963 seconds
+    Waiting 14.9998068809509 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    OpenStreetMap: HTTP 504 Gateway Timeout.
 
 ![](eda_files/figure-html/unnamed-chunk-2-1.png)
 
@@ -71,10 +69,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997725486755 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    Waiting 14.9998626708984 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-3-1.png)
 
@@ -94,10 +89,10 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              )
 ```
 
-    Waiting 14.999785900116 seconds
+    Waiting 14.999856710434 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    OpenStreetMap: HTTP 504 Gateway Timeout.
 
 ![](eda_files/figure-html/unnamed-chunk-4-1.png)
 
@@ -115,10 +110,7 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 )
 ```
 
-    Waiting 14.9997680187225 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    Waiting 14.9998421669006 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-5-1.png)
 
@@ -170,10 +162,10 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.99977850914 seconds
+    Waiting 14.9998621940613 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 502 Bad Gateway.
+    OpenStreetMap: HTTP 504 Gateway Timeout.
 
     Downloading wildfire perimeters from WFIGS...
 
