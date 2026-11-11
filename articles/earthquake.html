@@ -102,20 +102,6 @@
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/analyze_dataset.html">analyze_dataset</a></span><span class="op">(</span><span class="va">fb_data_bing</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: There was 1 warning in `summarise()`.</span></span>
-<span><span class="co">#&gt; ℹ In argument: `across(where(is.numeric), list(mean = mean, sd = sd), na.rm =</span></span>
-<span><span class="co">#&gt;   TRUE)`.</span></span>
-<span><span class="co">#&gt; Caused by warning:</span></span>
-<span><span class="co">#&gt; ! The `...` argument of `across()` is deprecated as of dplyr 1.1.0.</span></span>
-<span><span class="co">#&gt; Supply arguments directly to `.fns` through an anonymous function instead.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   # Previously</span></span>
-<span><span class="co">#&gt;   across(a:b, mean, na.rm = TRUE)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   # Now</span></span>
-<span><span class="co">#&gt;   across(a:b, \(x) mean(x, na.rm = TRUE))</span></span>
-<span><span class="co">#&gt; ℹ The deprecated feature was likely used in the disasterMaps package.</span></span>
-<span><span class="co">#&gt;   Please report the issue to the authors.</span></span>
 <span><span class="co">#&gt; $missing</span></span>
 <span><span class="co">#&gt; # A tibble: 1 × 15</span></span>
 <span><span class="co">#&gt;   latitude longitude quadkey country date_time n_baseline n_crisis n_difference</span></span>
@@ -175,7 +161,7 @@
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tiles_3857</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_tiles.html">build_tiles</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Building tile polygons for 3213 distinct quadkeys (6423 rows total) -&gt; /tmp/Rtmp7i2AQv/tiles.Rds</span></span>
+<span><span class="co">#&gt; Building tile polygons for 3213 distinct quadkeys (6423 rows total) -&gt; /tmp/RtmpOhouJ5/tiles.Rds</span></span>
 <span></span>
 <span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_windows.html">compute_windows</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, <span class="va">tzone</span><span class="op">)</span></span>
 <span><span class="va">w</span></span>

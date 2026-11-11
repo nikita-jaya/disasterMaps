@@ -34,20 +34,6 @@ head(fb_data_bing)
 ``` r
 
 analyze_dataset(fb_data_bing)
-#> Warning: There was 1 warning in `summarise()`.
-#> ℹ In argument: `across(where(is.numeric), list(mean = mean, sd = sd), na.rm =
-#>   TRUE)`.
-#> Caused by warning:
-#> ! The `...` argument of `across()` is deprecated as of dplyr 1.1.0.
-#> Supply arguments directly to `.fns` through an anonymous function instead.
-#> 
-#>   # Previously
-#>   across(a:b, mean, na.rm = TRUE)
-#> 
-#>   # Now
-#>   across(a:b, \(x) mean(x, na.rm = TRUE))
-#> ℹ The deprecated feature was likely used in the disasterMaps package.
-#>   Please report the issue to the authors.
 #> $missing
 #> # A tibble: 1 × 15
 #>   latitude longitude quadkey country date_time n_baseline n_crisis n_difference
@@ -109,7 +95,7 @@ moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
 ``` r
 
 tiles_3857 <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
-#> Building tile polygons for 246 distinct quadkeys (492 rows total) -> /tmp/Rtmp9cydTh/tiles.Rds
+#> Building tile polygons for 246 distinct quadkeys (492 rows total) -> /tmp/Rtmppfxjjj/tiles.Rds
 
 w <- compute_windows(fb_data_bing, tzone)
 w
