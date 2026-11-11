@@ -4,29 +4,37 @@ vignette: >
   %\VignetteIndexEntry{Exploratory Data Analysis (Disaster-Agnostic)}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
-execute:
-  eval: false
 ---
 
 ## Instructions
 
 Make sure you set `tzone` in the code chunk below to the relevant timezone. Then, you can run this file to get rough population and displacement plots for the first and last timepoints.
 
-The code below is not run when the package is built, because it needs the Meta Data for Good CSVs (`fb_pop_crisis_bing_tiles/` and `fb_move_crisis_bing_tiles/`) in your project folder.
-
 ## Data Cleaning + Loading
 ```{r}
+#| warning: false
 library(disasterMaps)
 
-re_run_cleaning <- TRUE
-tzone <- "America/Los_Angeles" # ENTER TIMEZONE HERE
+disaster <- "fire" # "fire" or "earthquake" (synthetic data shipped with the package)
+tzone <- c(fire = "America/Los_Angeles",
+           earthquake = "Europe/Istanbul")[[disaster]] # ENTER TIMEZONE HERE
 
-fb_data_bing <- load_population(re_run = re_run_cleaning)
-tiles_3857   <- build_tiles(fb_data_bing, re_run = re_run_cleaning)
+pop_dir  <- system.file("extdata", disaster, "population", package = "disasterMaps")
+move_dir <- system.file("extdata", disaster, "movement", package = "disasterMaps")
+
+fb_data_bing <- aggregate_csvs(pop_dir)
+tiles_3857   <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
 w <- compute_windows(fb_data_bing, tzone)
 attach(w)
-mp_data_bing <- load_movement(re_run = re_run_cleaning)
-moved <- build_moved(mp_data_bing, re_run = re_run_cleaning)
+mp_data_bing <- aggregate_csvs(move_dir)
+moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
+
+lon_limits <- range(fb_data_bing$longitude)
+lat_limits <- range(fb_data_bing$latitude)
+zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
+
+# OpenStreetMap roads drawn on top: "none", "major", "secondary" or "all"
+highway_detail <- "major"
 ```
 
 
@@ -37,10 +45,11 @@ moved <- build_moved(mp_data_bing, re_run = re_run_cleaning)
 ```{r}
 population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              plot_hour = w[["first_hour"]],
-                             lon_limits = range(fb_data_bing$longitude), 
-                             lat_limits = range(fb_data_bing$latitude),
-                             zoom = 6,
-                             tzone = tzone
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail
                              )
 
 ```
@@ -50,10 +59,11 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
 ```{r}
 population_plot_n_difference(plot_ds = w[["first_ds"]],
                              plot_hour = w[["first_hour"]],
-                             lon_limits = range(fb_data_bing$longitude), 
-                             lat_limits = range(fb_data_bing$latitude),
-                             zoom = 6,
-                             tzone = tzone
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail
                              )
 
 ```
@@ -65,10 +75,11 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
 ```{r}
 population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              plot_hour = w[["latest_hour"]],
-                             lon_limits = range(fb_data_bing$longitude), 
-                             lat_limits = range(fb_data_bing$latitude),
-                             zoom = 6,
-                             tzone = tzone
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail
                              )
 
 ```
@@ -78,59 +89,62 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
 ```{r}
 population_plot_n_difference(plot_ds = w[["latest_ds"]],
                              plot_hour = w[["latest_hour"]],
-                             lon_limits = range(fb_data_bing$longitude), 
-                             lat_limits = range(fb_data_bing$latitude),
-                             zoom = 6,
-                             tzone = tzone
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail
 )
 
 ```
 
-## Disaster-Specific 
+## Disaster-Specific
 
 ### Earthquakes
 
 ```{r}
+#| eval: !expr disaster == "earthquake"
 # start and end dates for earthquakes, which can be adjusted
-# start_date <- as.Date(w[["first_ds"]]) -7
-# end_date <- as.Date(w[["first_ds"]])
-# min_magnitude <- 2.5
+start_date <- as.Date(w[["first_ds"]]) - 1
+end_date <- as.Date(w[["latest_ds"]]) + 1
+min_magnitude <- 6
 
 # if you want shared legends, use disaster_limits()!!
 
-# population_plot_n_difference(plot_ds = w[["first_ds"]],
-#                              plot_hour = w[["first_hour"]],
-#                              lon_limits = range(fb_data_bing$longitude), 
-#                              lat_limits = range(fb_data_bing$latitude),
-#                              zoom = 6,
-#                              tzone = tzone,
-#                              disaster_type = "earthquake",
-#                              start_date = start_date,
-#                              end_date = end_date,
-#                              min_magnitude = min_magnitude
-#                              )
+population_plot_n_difference(plot_ds = w[["first_ds"]],
+                             plot_hour = w[["first_hour"]],
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail,
+                             disaster_type = "earthquake",
+                             start_date = start_date,
+                             end_date = end_date,
+                             min_magnitude = min_magnitude
+                             )
 ```
 
 
 ### Fires
 
 ```{r}
-# start and end dates for earthquakes, which can be adjusted
-# start_date <- as.Date(w[["first_ds"]]) -7
-# end_date <- as.Date(w[["first_ds"]])
+#| eval: !expr disaster == "fire"
+# start and end dates for fires, which can be adjusted
+start_date <- as.Date(w[["first_ds"]]) - 7
+end_date <- as.Date(w[["latest_ds"]]) + 1
 
-# if you want shared legends, use disaster_limits()!!
-
-# population_plot_n_difference(plot_ds = w[["first_ds"]],
-#                              plot_hour = w[["first_hour"]],
-#                              lon_limits = range(fb_data_bing$longitude), 
-#                              lat_limits = range(fb_data_bing$latitude),
-#                              zoom = 6,
-#                              tzone = tzone,
-#                              disaster_type = "fire",
-#                              start_date = start_date,
-#                              end_date = end_date
-#                              )
+population_plot_n_difference(plot_ds = w[["first_ds"]],
+                             plot_hour = w[["first_hour"]],
+                             lon_limits = lon_limits,
+                             lat_limits = lat_limits,
+                             zoom = zoom,
+                             tzone = tzone,
+                             highway_detail = highway_detail,
+                             disaster_type = "fire",
+                             start_date = start_date,
+                             end_date = end_date
+                             )
 ```
 
 ## Animations
@@ -138,26 +152,28 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 ### Population Animation
 
 ```{r}
-population_plot_animate(
+crisis_animation <- population_plot_animate(
   metric = "crisis",
   tzone = tzone,
-  lon_limits = range(fb_data_bing$longitude),
-  lat_limits = range(fb_data_bing$latitude),
-  fps = 8,
-  filename = "crisis.gif"
+  lon_limits = lon_limits,
+  lat_limits = lat_limits,
+  zoom = zoom,
+  fps = 1
 )
+crisis_animation
 
 ```
 
 ### Population Animation
 
 ```{r}
-population_plot_animate(
+difference_animation <- population_plot_animate(
   metric = "difference",
   tzone = tzone,
-  lon_limits = range(fb_data_bing$longitude),
-  lat_limits = range(fb_data_bing$latitude),
-  fps = 8,
-  filename = "difference.gif"
+  lon_limits = lon_limits,
+  lat_limits = lat_limits,
+  zoom = zoom,
+  fps = 1
 )
+difference_animation
 ```
