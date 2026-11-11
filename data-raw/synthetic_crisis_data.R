@@ -1,15 +1,19 @@
-######------- Synthetic Facebook Population During Crisis data --------#######
+######------- Synthetic Facebook Population & Movement During Crisis data --------#######
 
-# Builds the synthetic CSVs shipped in inst/extdata/, one folder per disaster
-# type, each holding one day of data at the 0000, 0800 and 1600 windows:
+# Builds the synthetic CSVs shipped in inst/extdata/: per disaster type, one
+# day of population and movement data at the 0000 and 1600 windows:
 #
-#   inst/extdata/fire/la_wildfire_2025-01-08_{0000,0800,1600}.csv
-#   inst/extdata/earthquake/turkey_earthquake_2023-02-06_{0000,0800,1600}.csv
+#   inst/extdata/fire/population/la_wildfire_2025-01-08_{0000,1600}.csv
+#   inst/extdata/fire/movement/la_wildfire_movement_2025-01-08_{...}.csv
+#   inst/extdata/earthquake/population/turkey_earthquake_2023-02-06_{...}.csv
+#   inst/extdata/earthquake/movement/turkey_earthquake_movement_2023-02-06_{...}.csv
 #
 # Meta's Data for Good crisis datasets are limited-access, so these stand in
-# for them in tests and vignettes. They mimic the real files: same 13 columns,
-# quadkey as text, nulls written as \N, and the date and window start time only
-# in the file name (aggregate_csvs() turns those into `ds` and `hour`).
+# for them in tests and vignettes. They mimic the real files: same columns
+# (13 for population, 15 for movement), quadkeys as text, nulls written as \N,
+# and the date and window start time only in the file name (aggregate_csvs()
+# turns those into `ds` and `hour`). Movement uses the same tiles, day, windows
+# and country as population, and its flows come from the same displacement.
 #
 # Re-run from the package root to regenerate them:
 #   source("data-raw/synthetic_crisis_data.R")
@@ -27,6 +31,10 @@
 #   * percent_change = 100 * n_difference / n_baseline
 #   * z_score        = n_difference / baseline standard deviation
 #   * density_*      = tile count / total count over all tiles in that window
+#   * movement rows are tile-to-tile journeys between consecutive windows,
+#     including start == end rows for people who stayed put; length_km is the
+#     great-circle distance between the two tile centroids; a pair with no
+#     baseline (e.g. a new evacuation route) has n_baseline = \N
 
 tz_files <- "America/Los_Angeles"
 
@@ -64,6 +72,14 @@ tile_to_quadkey <- function(x, y, zoom) {
   }, character(1))
 }
 
+# great-circle distance in km between points
+haversine_km <- function(lon1, lat1, lon2, lat2) {
+  to_rad <- pi / 180
+  a <- sin((lat2 - lat1) * to_rad / 2)^2 +
+    cos(lat1 * to_rad) * cos(lat2 * to_rad) * sin((lon2 - lon1) * to_rad / 2)^2
+  2 * 6371.0088 * asin(sqrt(pmin(1, a)))
+}
+
 # approximate distance in km between points (fine at city scale)
 km <- function(lon1, lat1, lon2, lat2) {
   dx <- (lon1 - lon2) * 111.32 * cos(lat1 * pi / 180)
@@ -75,7 +91,7 @@ km <- function(lon1, lat1, lon2, lat2) {
 # Generator
 # ---------------------------------------------------------------------------
 #  name       file-name prefix
-#  out_dir    folder to write the three CSVs to
+#  out_dir    folder to write to; population/ and movement/ go inside it
 #  ds         the day ("YYYY-MM-DD")
 #  hours      window start times, "HHMM", Pacific time
 #  lon_limits, lat_limits  bounding box
@@ -88,9 +104,12 @@ km <- function(lon1, lat1, lon2, lat2) {
 #             who leave at the peak), ramp_hours (how long leaving takes)
 #  absorb     share of displaced people who stay in the area, in a ring
 #             around each impact zone (the rest leave the map)
-simulate_crisis <- function(name, out_dir, ds, hours = c("0000", "0800", "1600"),
+#  trip_km    typical trip length for movement (distance decay), and
+#  max_trip_km  the longest trip between tiles in the movement data
+simulate_crisis <- function(name, out_dir, ds, hours = c("0000", "1600"),
                             lon_limits, lat_limits, country, centres,
                             floor = 300, sparse = NULL, impacts, absorb = 0.6,
+                            trip_km = 8, max_trip_km = 40,
                             zoom = 13, min_users = 10, seed = 1) {
   set.seed(seed)
 
@@ -131,21 +150,12 @@ simulate_crisis <- function(name, out_dir, ds, hours = c("0000", "0800", "1600")
   # People are home at night and spread out in the day
   hour_factor <- c("0000" = 1.00, "0800" = 0.93, "1600" = 0.97)
 
-  if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
-  old <- list.files(out_dir, pattern = "\\.csv$", full.names = TRUE)
-  file.remove(old)
-
-  for (hr in hours) {
-    date_time <- lubridate::ymd_hm(paste(ds, hr), tz = tz_files)
-    base_mean <- base_tile * hour_factor[[hr]]
-    n_baseline <- round(base_mean)
-    sd_baseline <- pmax(1, sqrt(base_mean) * 1.8 + 0.04 * base_mean)
-
-    # Displacement: ramps up after each impact starts, then slowly eases.
-    # Tiles inside an impact zone lose people; a ring around it gains some.
-    lost <- rep(0, nrow(grid))
+  # Displacement at a moment in time: ramps up after each impact starts, then
+  # slowly eases. Tiles inside an impact zone lose people (`frac` of them); a
+  # ring around it gains some (`gained`).
+  displacement <- function(date_time, base_mean) {
+    frac_total <- rep(0, nrow(grid))
     ring_weight <- rep(0, nrow(grid))
-    displaced <- 0
     for (i in seq_len(nrow(impacts))) {
       hrs <- as.numeric(difftime(date_time, impacts$start[i], units = "hours"))
       if (hrs <= 0) next
@@ -154,14 +164,32 @@ simulate_crisis <- function(name, out_dir, ds, hours = c("0000", "0800", "1600")
       d <- impact_dist[, i]
       r <- impacts$radius_km[i]
       inside <- exp(-(d / r)^4)  # flat top, sharp edge
-      frac <- impacts$loss[i] * intensity * inside
-      lost <- lost + base_mean * frac
-      displaced <- displaced + sum(base_mean * frac)
+      frac_total <- frac_total + impacts$loss[i] * intensity * inside
       ring_weight <- ring_weight +
         exp(-((d - 3 * r) / (2 * r))^2) * (1 - inside) * base_mean
     }
+    lost <- base_mean * frac_total
+    displaced <- sum(lost)
     gained <- if (sum(ring_weight) > 0)
-      absorb * displaced * ring_weight / sum(ring_weight) else 0
+      absorb * displaced * ring_weight / sum(ring_weight) else rep(0, nrow(grid))
+    list(frac = frac_total, lost = lost, gained = gained)
+  }
+
+  pop_dir <- file.path(out_dir, "population")
+  for (dir in c(pop_dir, file.path(out_dir, "movement"))) {
+    if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+    file.remove(list.files(dir, pattern = "\\.csv$", full.names = TRUE))
+  }
+
+  for (hr in hours) {
+    date_time <- lubridate::ymd_hm(paste(ds, hr), tz = tz_files)
+    base_mean <- base_tile * hour_factor[[hr]]
+    n_baseline <- round(base_mean)
+    sd_baseline <- pmax(1, sqrt(base_mean) * 1.8 + 0.04 * base_mean)
+
+    disp <- displacement(date_time, base_mean)
+    lost <- disp$lost
+    gained <- disp$gained
 
     crisis_mean <- pmax(0, base_mean - lost + gained) *
       stats::rnorm(nrow(grid), 1, 0.04)
@@ -190,7 +218,116 @@ simulate_crisis <- function(name, out_dir, ds, hours = c("0000", "0800", "1600")
       stringsAsFactors = FALSE
     )[keep, ]
 
-    f <- file.path(out_dir, sprintf("%s_%s_%s.csv", name, ds, hr))
+    f <- file.path(pop_dir, sprintf("%s_%s_%s.csv", name, ds, hr))
+    readr::write_csv(df, f, na = "\\N")
+    message("Wrote ", nrow(df), " rows to ", f)
+  }
+
+  simulate_movement(
+    grid = grid, base_tile = base_tile, displacement = displacement,
+    name = name, out_dir = file.path(out_dir, "movement"), ds = ds,
+    hours = hours, country = country, trip_km = trip_km,
+    max_trip_km = max_trip_km, min_users = min_users, seed = seed + 1
+  )
+}
+
+# ---------------------------------------------------------------------------
+# Movement: tile-to-tile journeys during each 8-hour window
+# ---------------------------------------------------------------------------
+# Baseline journeys follow a gravity model: each tile sends a share of its
+# people to other tiles, weighted by the destination's population and
+# exp(-distance / trip_km). Most people stay put (start == end rows).
+# During the crisis:
+#   * fewer trips start in, or go to, evacuated tiles
+#   * people who leave an impact zone in this window (the rise in displacement
+#     since the previous window) travel to the tiles that gain people in the
+#     population data, nearer ones first
+simulate_movement <- function(grid, base_tile, displacement, name, out_dir, ds,
+                              hours, country, trip_km, max_trip_km, min_users,
+                              seed) {
+  set.seed(seed)
+  n <- nrow(grid)
+  dist <- outer(seq_len(n), seq_len(n), function(i, j)
+    haversine_km(grid$longitude[i], grid$latitude[i],
+                 grid$longitude[j], grid$latitude[j]))
+  near <- dist <= max_trip_km
+
+  # Share of people making a trip to another tile, by window (overnight
+  # 12am-8am is quiet, daytime is busy)
+  trip_rate <- c("0000" = 0.06, "0800" = 0.18, "1600" = 0.15)
+  hour_factor <- c("0000" = 1.00, "0800" = 0.93, "1600" = 0.97)
+
+  for (hr in hours) {
+    date_time <- lubridate::ymd_hm(paste(ds, hr), tz = tz_files)
+    base_mean <- base_tile * hour_factor[[hr]]
+
+    # Baseline flows (matrix, rows = start tile, cols = end tile)
+    w <- (rep(1, n) %o% base_mean) * exp(-dist / trip_km) * near
+    diag(w) <- 0
+    w <- w / pmax(rowSums(w), 1e-12)
+    base_flow <- trip_rate[[hr]] * base_mean * w
+    diag(base_flow) <- (1 - trip_rate[[hr]]) * base_mean
+
+    # Crisis flows
+    now  <- displacement(date_time, base_mean)
+    prev <- displacement(date_time - 8 * 3600, base_mean)
+    keep_start <- pmax(0, 1 - now$frac)
+    keep_end   <- pmax(0, 1 - 0.7 * now$frac)
+    crisis_flow <- base_flow * keep_start * rep(keep_end, each = n)
+    diag(crisis_flow) <- diag(base_flow) * keep_start
+
+    leaving <- pmax(0, now$frac - prev$frac) * base_mean
+    if (sum(leaving) > 0 && sum(now$gained) > 0) {
+      to <- (rep(1, n) %o% now$gained) * exp(-dist / (2 * trip_km))
+      diag(to) <- 0
+      # Evacuees follow a few routes: keep each start tile's top 5 destinations
+      origins <- which(leaving > 0)
+      for (i in origins) {
+        cut <- sort(to[i, ], decreasing = TRUE)[5]
+        to[i, to[i, ] < cut] <- 0
+      }
+      to <- to / pmax(rowSums(to), 1e-12)
+      share <- sum(now$gained) / sum(now$lost)  # same absorb share as population
+      crisis_flow <- crisis_flow + share * leaving * to
+    }
+
+    # Pairs worth reporting: expected count near the suppression threshold
+    idx <- which(base_flow >= min_users / 2 | crisis_flow >= min_users / 2,
+                 arr.ind = TRUE)
+    b <- base_flow[idx]
+    cm <- crisis_flow[idx] * stats::rnorm(nrow(idx), 1, 0.05)
+    n_baseline <- round(b)
+    n_crisis <- as.numeric(stats::rpois(nrow(idx), pmax(0, cm)))
+    sd_baseline <- pmax(1, sqrt(b) * 1.8 + 0.04 * b)
+
+    n_baseline[n_baseline < min_users] <- NA
+    n_crisis[n_crisis < min_users] <- NA
+    keep <- !(is.na(n_baseline) & is.na(n_crisis))
+
+    s <- idx[, 1]
+    e <- idx[, 2]
+    n_difference <- n_crisis - n_baseline
+    df <- data.frame(
+      start_latitude  = round(grid$latitude[s], 6),
+      start_longitude = round(grid$longitude[s], 6),
+      end_latitude    = round(grid$latitude[e], 6),
+      end_longitude   = round(grid$longitude[e], 6),
+      length_km       = round(dist[idx], 4),
+      start_quadkey   = grid$quadkey[s],
+      end_quadkey     = grid$quadkey[e],
+      country         = country,
+      date_time       = date_time,
+      n_baseline      = n_baseline,
+      n_crisis        = n_crisis,
+      n_difference    = n_difference,
+      percent_change  = round(100 * n_difference / n_baseline, 4),
+      z_score         = round(n_difference / sd_baseline, 4),
+      ds              = as.Date(ds),
+      stringsAsFactors = FALSE
+    )[keep, ]
+    df <- df[order(df$start_quadkey, df$end_quadkey), ]
+
+    f <- file.path(out_dir, sprintf("%s_movement_%s_%s.csv", name, ds, hr))
     readr::write_csv(df, f, na = "\\N")
     message("Wrote ", nrow(df), " rows to ", f)
   }
@@ -206,6 +343,8 @@ pst <- function(x) as.POSIXct(x, tz = tz_files)
 simulate_crisis(
   name       = "la_wildfire",
   out_dir    = "inst/extdata/fire",
+  trip_km    = 5,
+  max_trip_km = 30,
   ds         = "2025-01-08",
   lon_limits = c(-118.75, -117.95),
   lat_limits = c(33.85, 34.35),
@@ -240,6 +379,8 @@ simulate_crisis(
 simulate_crisis(
   name       = "turkey_earthquake",
   out_dir    = "inst/extdata/earthquake",
+  trip_km    = 10,
+  max_trip_km = 80,
   ds         = "2023-02-06",
   lon_limits = c(35.95, 38.55),
   lat_limits = c(35.85, 38.45),

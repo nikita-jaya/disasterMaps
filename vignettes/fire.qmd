@@ -27,7 +27,7 @@ tzone <- "America/Los_Angeles"
 ```{r}
 #| label: load-data
 #| warning: false
-data_dir <- system.file("extdata", "fire", package = "disasterMaps")
+data_dir <- system.file("extdata", "fire", "population", package = "disasterMaps")
 list.files(data_dir)
 
 fb_data_bing <- aggregate_csvs(data_dir)
@@ -37,6 +37,23 @@ head(fb_data_bing)
 ```{r}
 #| label: summary
 analyze_dataset(fb_data_bing)
+```
+
+## Movement data
+
+
+
+
+```{r}
+#| label: load-movement
+#| warning: false
+move_dir <- system.file("extdata", "fire", "movement", package = "disasterMaps")
+list.files(move_dir)
+
+mp_data_bing <- aggregate_csvs(move_dir)
+head(mp_data_bing)
+
+moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
 ```
 
 ## Tiles and time windows
@@ -55,7 +72,7 @@ lon_limits <- range(fb_data_bing$longitude)
 lat_limits <- range(fb_data_bing$latitude)
 zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
 
-# One colour scale for all three windows
+# One colour scale for both windows
 diff_limits <- shared_limits(
   "Difference between baseline and crisis", symmetric = TRUE,
   ds1 = w$first_ds, hour1 = w$first_hour,
@@ -87,20 +104,6 @@ population_plot_n_crisis(
 #| label: difference-0000
 population_plot_n_difference(
   plot_ds = w$first_ds, plot_hour = "0000", tzone = tzone,
-  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
-  fill_limits = diff_limits
-)
-```
-
-### 8am
-
-
-
-
-```{r}
-#| label: difference-0800
-population_plot_n_difference(
-  plot_ds = w$first_ds, plot_hour = "0800", tzone = tzone,
   lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
   fill_limits = diff_limits
 )
