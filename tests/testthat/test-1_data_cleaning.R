@@ -1,20 +1,3 @@
-# ---- clean_numeric ---------------------------------------------------------
-
-test_that("clean_numeric converts Meta's \\N token to NA", {
-  expect_identical(clean_numeric(c("1", "\\N", "3.5")), c(1, NA, 3.5))
-})
-
-test_that("clean_numeric passes numbers through and makes junk NA silently", {
-  expect_identical(clean_numeric(c(1L, 2L)), c(1, 2))
-  expect_no_warning(out <- clean_numeric(c("abc", "7")))
-  expect_identical(out, c(NA, 7))
-})
-
-test_that("clean_numeric keeps existing NA and handles factors by label", {
-  expect_identical(clean_numeric(c(NA, "2")), c(NA, 2))
-  expect_identical(clean_numeric(factor(c("10", "\\N"))), c(10, NA))
-})
-
 # ---- aggregate_csvs --------------------------------------------------------
 
 # Write CSVs into a temp folder and point here::here() at it.

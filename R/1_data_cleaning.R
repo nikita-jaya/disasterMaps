@@ -1,20 +1,7 @@
 ######------- Data Cleaning Functions --------#######
 
-# Convert possible "\N" values to proper numeric NA values.
-# NOTE: for the CSV load path this is now handled at read time via the `na=`
-# argument in aggregate_csvs() (see #3); kept here for ad-hoc column cleaning.
-
-#' Title
-#'
-#' @param x
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-clean_numeric <- function(x) {
-  suppressWarnings(as.numeric(na_if(as.character(x), "\\N")))
-}
+# Meta's "\N" missing-value token is converted to NA at read time via the
+# `na=` argument in aggregate_csvs() (see #3).
 
 
 ###### ----- Aggregate CSVs ------ ######

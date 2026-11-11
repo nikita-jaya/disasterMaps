@@ -5,7 +5,6 @@ template:
 reference:
 - title: Data Cleaning
   contents:
-  - clean_numeric
   - aggregate_csvs
   - analyze_dataset
   - load_population
