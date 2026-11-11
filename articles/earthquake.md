@@ -11,11 +11,10 @@ tzone <- "Europe/Istanbul"
 
 ``` r
 
-data_dir <- system.file("extdata", "earthquake", package = "disasterMaps")
+data_dir <- system.file("extdata", "earthquake", "population", package = "disasterMaps")
 list.files(data_dir)
 #> [1] "turkey_earthquake_2023-02-06_0000.csv"
-#> [2] "turkey_earthquake_2023-02-06_0800.csv"
-#> [3] "turkey_earthquake_2023-02-06_1600.csv"
+#> [2] "turkey_earthquake_2023-02-06_1600.csv"
 
 fb_data_bing <- aggregate_csvs(data_dir)
 head(fb_data_bing)
@@ -54,7 +53,7 @@ analyze_dataset(fb_data_bing)
 #> # A tibble: 1 × 15
 #>   latitude longitude quadkey country date_time n_baseline n_crisis n_difference
 #>      <dbl>     <dbl>   <dbl>   <dbl>     <dbl>      <dbl>    <dbl>        <dbl>
-#> 1        0         0       0       0         0   0.000830   0.0127       0.0135
+#> 1        0         0       0       0         0   0.000778   0.0104       0.0112
 #> # ℹ 7 more variables: density_baseline <dbl>, density_crisis <dbl>,
 #> #   percent_change <dbl>, z_score <dbl>, ds <dbl>, source_file <dbl>,
 #> #   hour <dbl>
@@ -63,7 +62,7 @@ analyze_dataset(fb_data_bing)
 #> # A tibble: 1 × 18
 #>   latitude_mean latitude_sd longitude_mean longitude_sd n_baseline_mean
 #>           <dbl>       <dbl>          <dbl>        <dbl>           <dbl>
-#> 1          37.5       0.598           37.2        0.771            170.
+#> 1          37.5       0.598           37.2        0.771            174.
 #> # ℹ 13 more variables: n_baseline_sd <dbl>, n_crisis_mean <dbl>,
 #> #   n_crisis_sd <dbl>, n_difference_mean <dbl>, n_difference_sd <dbl>,
 #> #   density_baseline_mean <dbl>, density_baseline_sd <dbl>,
@@ -72,10 +71,38 @@ analyze_dataset(fb_data_bing)
 #> #   z_score_sd <dbl>
 #> 
 #> $n_rows
-#> [1] 9633
+#> [1] 6423
 #> 
 #> $n_cols
 #> [1] 15
+```
+
+## Movement data
+
+``` r
+
+move_dir <- system.file("extdata", "earthquake", "movement", package = "disasterMaps")
+list.files(move_dir)
+#> [1] "turkey_earthquake_movement_2023-02-06_0000.csv"
+#> [2] "turkey_earthquake_movement_2023-02-06_1600.csv"
+
+mp_data_bing <- aggregate_csvs(move_dir)
+head(mp_data_bing)
+#> # A tibble: 6 × 17
+#>   start_latitude start_longitude end_latitude end_longitude length_km
+#>            <dbl>           <dbl>        <dbl>         <dbl>     <dbl>
+#> 1           38.5            36.0         38.5          36.0         0
+#> 2           38.5            36.0         38.5          36.0         0
+#> 3           38.4            36.0         38.4          36.0         0
+#> 4           38.4            36.0         38.4          36.0         0
+#> 5           38.5            36.1         38.5          36.1         0
+#> 6           38.5            36.1         38.5          36.1         0
+#> # ℹ 12 more variables: start_quadkey <chr>, end_quadkey <chr>, country <chr>,
+#> #   date_time <dttm>, n_baseline <dbl>, n_crisis <dbl>, n_difference <dbl>,
+#> #   percent_change <dbl>, z_score <dbl>, ds <date>, source_file <chr>,
+#> #   hour <chr>
+
+moved <- build_moved(mp_data_bing, re_run = TRUE, cache_dir = tempdir())
 ```
 
 ## Tiles and time windows
@@ -83,7 +110,7 @@ analyze_dataset(fb_data_bing)
 ``` r
 
 tiles_3857 <- build_tiles(fb_data_bing, re_run = TRUE, cache_dir = tempdir())
-#> Building tile polygons for 3214 distinct quadkeys (9633 rows total) -> /tmp/RtmpSZ9o5W/tiles.Rds
+#> Building tile polygons for 3213 distinct quadkeys (6423 rows total) -> /tmp/Rtmp7i2AQv/tiles.Rds
 
 w <- compute_windows(fb_data_bing, tzone)
 w
@@ -109,7 +136,7 @@ lon_limits <- range(fb_data_bing$longitude)
 lat_limits <- range(fb_data_bing$latitude)
 zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
 
-# One colour scale for all three windows
+# One colour scale for both windows
 diff_limits <- shared_limits(
   "Difference between baseline and crisis", symmetric = TRUE,
   ds1 = w$first_ds, hour1 = w$first_hour,
@@ -148,19 +175,6 @@ population_plot_n_difference(
 ![](earthquake_files/figure-html/difference-0000-1.png)
 
 ### Second window
-
-``` r
-
-population_plot_n_difference(
-  plot_ds = w$first_ds, plot_hour = "0800", tzone = tzone,
-  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
-  fill_limits = diff_limits
-)
-```
-
-![](earthquake_files/figure-html/difference-0800-1.png)
-
-### Third window
 
 ``` r
 

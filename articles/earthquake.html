@@ -79,11 +79,10 @@
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">data_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"earthquake"</span>, package <span class="op">=</span> <span class="st">"disasterMaps"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">data_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"earthquake"</span>, <span class="st">"population"</span>, package <span class="op">=</span> <span class="st">"disasterMaps"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">data_dir</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "turkey_earthquake_2023-02-06_0000.csv"</span></span>
-<span><span class="co">#&gt; [2] "turkey_earthquake_2023-02-06_0800.csv"</span></span>
-<span><span class="co">#&gt; [3] "turkey_earthquake_2023-02-06_1600.csv"</span></span>
+<span><span class="co">#&gt; [2] "turkey_earthquake_2023-02-06_1600.csv"</span></span>
 <span></span>
 <span><span class="va">fb_data_bing</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/aggregate_csvs.html">aggregate_csvs</a></span><span class="op">(</span><span class="va">data_dir</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">fb_data_bing</span><span class="op">)</span></span>
@@ -121,7 +120,7 @@
 <span><span class="co">#&gt; # A tibble: 1 × 15</span></span>
 <span><span class="co">#&gt;   latitude longitude quadkey country date_time n_baseline n_crisis n_difference</span></span>
 <span><span class="co">#&gt;      &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;        &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1        0         0       0       0         0   0.000830   0.0127       0.0135</span></span>
+<span><span class="co">#&gt; 1        0         0       0       0         0   0.000778   0.0104       0.0112</span></span>
 <span><span class="co">#&gt; # ℹ 7 more variables: density_baseline &lt;dbl&gt;, density_crisis &lt;dbl&gt;,</span></span>
 <span><span class="co">#&gt; #   percent_change &lt;dbl&gt;, z_score &lt;dbl&gt;, ds &lt;dbl&gt;, source_file &lt;dbl&gt;,</span></span>
 <span><span class="co">#&gt; #   hour &lt;dbl&gt;</span></span>
@@ -130,7 +129,7 @@
 <span><span class="co">#&gt; # A tibble: 1 × 18</span></span>
 <span><span class="co">#&gt;   latitude_mean latitude_sd longitude_mean longitude_sd n_baseline_mean</span></span>
 <span><span class="co">#&gt;           &lt;dbl&gt;       &lt;dbl&gt;          &lt;dbl&gt;        &lt;dbl&gt;           &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1          37.5       0.598           37.2        0.771            170.</span></span>
+<span><span class="co">#&gt; 1          37.5       0.598           37.2        0.771            174.</span></span>
 <span><span class="co">#&gt; # ℹ 13 more variables: n_baseline_sd &lt;dbl&gt;, n_crisis_mean &lt;dbl&gt;,</span></span>
 <span><span class="co">#&gt; #   n_crisis_sd &lt;dbl&gt;, n_difference_mean &lt;dbl&gt;, n_difference_sd &lt;dbl&gt;,</span></span>
 <span><span class="co">#&gt; #   density_baseline_mean &lt;dbl&gt;, density_baseline_sd &lt;dbl&gt;,</span></span>
@@ -139,17 +138,44 @@
 <span><span class="co">#&gt; #   z_score_sd &lt;dbl&gt;</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_rows</span></span>
-<span><span class="co">#&gt; [1] 9633</span></span>
+<span><span class="co">#&gt; [1] 6423</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_cols</span></span>
 <span><span class="co">#&gt; [1] 15</span></span></code></pre></div>
 </div>
-</section><section class="level2"><h2 id="tiles-and-time-windows">Tiles and time windows<a class="anchor" aria-label="anchor" href="#tiles-and-time-windows"></a>
+</section><section class="level2"><h2 id="movement-data">Movement data<a class="anchor" aria-label="anchor" href="#movement-data"></a>
 </h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">move_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"earthquake"</span>, <span class="st">"movement"</span>, package <span class="op">=</span> <span class="st">"disasterMaps"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">move_dir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "turkey_earthquake_movement_2023-02-06_0000.csv"</span></span>
+<span><span class="co">#&gt; [2] "turkey_earthquake_movement_2023-02-06_1600.csv"</span></span>
+<span></span>
+<span><span class="va">mp_data_bing</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/aggregate_csvs.html">aggregate_csvs</a></span><span class="op">(</span><span class="va">move_dir</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">mp_data_bing</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 6 × 17</span></span>
+<span><span class="co">#&gt;   start_latitude start_longitude end_latitude end_longitude length_km</span></span>
+<span><span class="co">#&gt;            &lt;dbl&gt;           &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1           38.5            36.0         38.5          36.0         0</span></span>
+<span><span class="co">#&gt; 2           38.5            36.0         38.5          36.0         0</span></span>
+<span><span class="co">#&gt; 3           38.4            36.0         38.4          36.0         0</span></span>
+<span><span class="co">#&gt; 4           38.4            36.0         38.4          36.0         0</span></span>
+<span><span class="co">#&gt; 5           38.5            36.1         38.5          36.1         0</span></span>
+<span><span class="co">#&gt; 6           38.5            36.1         38.5          36.1         0</span></span>
+<span><span class="co">#&gt; # ℹ 12 more variables: start_quadkey &lt;chr&gt;, end_quadkey &lt;chr&gt;, country &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   date_time &lt;dttm&gt;, n_baseline &lt;dbl&gt;, n_crisis &lt;dbl&gt;, n_difference &lt;dbl&gt;,</span></span>
+<span><span class="co">#&gt; #   percent_change &lt;dbl&gt;, z_score &lt;dbl&gt;, ds &lt;date&gt;, source_file &lt;chr&gt;,</span></span>
+<span><span class="co">#&gt; #   hour &lt;chr&gt;</span></span>
+<span></span>
+<span><span class="va">moved</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_moved.html">build_moved</a></span><span class="op">(</span><span class="va">mp_data_bing</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+</section><section class="level2"><h2 id="tiles-and-time-windows">Tiles and time windows<a class="anchor" aria-label="anchor" href="#tiles-and-time-windows"></a>
+</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tiles_3857</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_tiles.html">build_tiles</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, re_run <span class="op">=</span> <span class="cn">TRUE</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Building tile polygons for 3214 distinct quadkeys (9633 rows total) -&gt; /tmp/RtmpSZ9o5W/tiles.Rds</span></span>
+<span><span class="co">#&gt; Building tile polygons for 3213 distinct quadkeys (6423 rows total) -&gt; /tmp/Rtmp7i2AQv/tiles.Rds</span></span>
 <span></span>
 <span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_windows.html">compute_windows</a></span><span class="op">(</span><span class="va">fb_data_bing</span>, <span class="va">tzone</span><span class="op">)</span></span>
 <span><span class="va">w</span></span>
@@ -175,7 +201,7 @@
 <span><span class="va">lat_limits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">fb_data_bing</span><span class="op">$</span><span class="va">latitude</span><span class="op">)</span></span>
 <span><span class="va">zoom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_zoom.html">fit_zoom</a></span><span class="op">(</span><span class="va">lon_limits</span>, <span class="va">lat_limits</span>, zoom <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># One colour scale for all three windows</span></span>
+<span><span class="co"># One colour scale for both windows</span></span>
 <span><span class="va">diff_limits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/shared_limits.html">shared_limits</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Difference between baseline and crisis"</span>, symmetric <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ds1 <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">first_ds</span>, hour1 <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">first_hour</span>,</span>
@@ -185,14 +211,14 @@
 </section><section class="level2"><h2 id="population-during-the-crisis">Population during the crisis<a class="anchor" aria-label="anchor" href="#population-during-the-crisis"></a>
 </h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">population_plot_n_crisis</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">plot_ds =</span> w<span class="sc">$</span>first_ds, <span class="at">plot_hour =</span> w<span class="sc">$</span>first_hour, <span class="at">tzone =</span> tzone,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon_limits =</span> lon_limits, <span class="at">lat_limits =</span> lat_limits, <span class="at">zoom =</span> zoom</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="sc">|---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="er">=========================================</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                                          </span></code></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">population_plot_n_crisis</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">plot_ds =</span> w<span class="sc">$</span>first_ds, <span class="at">plot_hour =</span> w<span class="sc">$</span>first_hour, <span class="at">tzone =</span> tzone,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon_limits =</span> lon_limits, <span class="at">lat_limits =</span> lat_limits, <span class="at">zoom =</span> zoom</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="sc">|---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span><span class="sc">---------</span><span class="er">|</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="er">=========================================</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                          </span></code></pre></div>
 <div class="cell-output-display">
 <div>
 <figure><p><img src="earthquake_files/figure-html/crisis-map-1.png" width="768"></p>
@@ -205,7 +231,7 @@
 <section class="level3"><h3 id="first-window">First window<a class="anchor" aria-label="anchor" href="#first-window"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_difference.html">population_plot_n_difference</a></span><span class="op">(</span></span>
 <span>  plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">first_ds</span>, plot_hour <span class="op">=</span> <span class="st">"0000"</span>, tzone <span class="op">=</span> <span class="va">tzone</span>,</span>
 <span>  lon_limits <span class="op">=</span> <span class="va">lon_limits</span>, lat_limits <span class="op">=</span> <span class="va">lat_limits</span>, zoom <span class="op">=</span> <span class="va">zoom</span>,</span>
@@ -219,22 +245,6 @@
 </div>
 </div>
 </section><section class="level3"><h3 id="second-window">Second window<a class="anchor" aria-label="anchor" href="#second-window"></a>
-</h3>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_difference.html">population_plot_n_difference</a></span><span class="op">(</span></span>
-<span>  plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">$</span><span class="va">first_ds</span>, plot_hour <span class="op">=</span> <span class="st">"0800"</span>, tzone <span class="op">=</span> <span class="va">tzone</span>,</span>
-<span>  lon_limits <span class="op">=</span> <span class="va">lon_limits</span>, lat_limits <span class="op">=</span> <span class="va">lat_limits</span>, zoom <span class="op">=</span> <span class="va">zoom</span>,</span>
-<span>  fill_limits <span class="op">=</span> <span class="va">diff_limits</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output-display">
-<div>
-<figure><p><img src="earthquake_files/figure-html/difference-0800-1.png" width="768"></p>
-</figure>
-</div>
-</div>
-</div>
-</section><section class="level3"><h3 id="third-window">Third window<a class="anchor" aria-label="anchor" href="#third-window"></a>
 </h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
