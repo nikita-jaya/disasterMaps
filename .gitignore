@@ -35,3 +35,6 @@ Outputs/
 .RData
 .Ruserdata
 docs
+
+# Synthetic example data shipped with the package
+!inst/extdata/**/*.csv
