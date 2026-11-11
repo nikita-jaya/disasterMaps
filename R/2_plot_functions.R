@@ -1,3 +1,10 @@
+# Range of column `col` across two time windows, so maps of both windows can
+# share one colour scale. Only tiles inside lon_limits / lat_limits count.
+# With symmetric = TRUE the range is centred on zero (c(-m, m)), which suits
+# diverging scales. Returns NULL if the column is missing or has no finite
+# values. Reads the globals `tiles_3857`, `lon_limits` and `lat_limits`, and
+# by default the window globals that attach(compute_windows(...)) creates.
+
 #' Title
 #'
 #' @param col
@@ -25,6 +32,15 @@ shared_limits <- function(col, symmetric = FALSE,
   r <- range(v, na.rm = TRUE)
   if (symmetric) { m <- max(abs(r)); c(-m, m) } else r
 }
+
+# Map of one population time window (plot_ds + plot_hour) from the global
+# `tiles_3857`, returned as a ggplot. `metric` picks the fill: change from
+# baseline, users during the crisis, or z-score. When lon_limits and
+# lat_limits are given, the map is cropped to them and gets a CartoDB basemap
+# and, optionally, OpenStreetMap roads (`highway_detail`). `disaster_type`
+# overlays fire perimeters or earthquake epicentres for start_date..end_date.
+# `labels` (sf points in EPSG:3857 with a `label` column) adds arrowed city
+# labels, angled per city with `label_angles`.
 
 #' Title
 #'
@@ -660,8 +676,9 @@ population_plot <- function(
   }
 }
 
-# Thin wrappers preserve the original call sites / API (#6). The ~250 lines of
-# duplicated body are now the single implementation above.
+# Change-from-baseline map: population_plot(metric = "difference") with a
+# clean theme (no axes) and the legend along the bottom. Any other
+# population_plot() argument can be passed through `...`.
 
 #' Title
 #'
@@ -686,6 +703,9 @@ population_plot_n_difference <- function(plot_ds, plot_hour, ...) {
       legend.key.width = unit(1.4, "cm")
     )
 }
+
+# Users-during-crisis map: population_plot(metric = "crisis") with the same
+# theme as population_plot_n_difference().
 
 #' Title
 #'

@@ -1,3 +1,10 @@
+# Downloads wildfire perimeters from the WFIGS (US interagency) ArcGIS
+# service for fires discovered between start_date and end_date that touch the
+# lon/lat box. Returns an sf in EPSG:3857, with the query details stored as
+# attributes, and caches it as an .Rds. If the download fails it falls back to
+# the cache, or to an empty sf, with a warning. Set re_run = TRUE to skip the
+# cache.
+
 #' Title
 #'
 #' @param start_date
@@ -253,7 +260,9 @@ fetch_fires <- function(
 }
 
 
-# Fire-perimeter layer added by population_plot(disaster_type = "fire").
+# Adds fire perimeters to the map `p1` as unfilled outlines, for
+# population_plot(disaster_type = "fire"). It always downloads fresh
+# perimeters (re_run = TRUE), so a map never shows another map's cached fires.
 
 #' Title
 #'

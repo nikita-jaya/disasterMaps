@@ -3,6 +3,12 @@
 
 ###### ----- Aggregate CSVs ------ ######
 
+# Reads every .csv in one folder and stacks them into a single data frame.
+# `path_parts` is passed to here::here(), so it can be one path or several
+# parts (c("data", "fire")). Adds `source_file`, plus `ds` (Date) and `hour`
+# ("HHMM") parsed from each file name. Exact duplicate rows are dropped
+# unless dedupe = FALSE.
+
 #' Title
 #'
 #' @param path_parts
@@ -83,6 +89,10 @@ aggregate_csvs <- function(path_parts,
   return(combined_data)
 }
 
+
+# Quick health check of a data frame. Returns a list with the share of NAs
+# per column, the mean and sd of every numeric column (ignoring NAs), and the
+# number of rows and columns.
 
 #' Title
 #'

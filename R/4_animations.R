@@ -1,3 +1,11 @@
+# Animates a population map through the time windows in the global
+# `tiles_3857`, one frame per window (ds + hour), optionally limited with
+# ds_values / hour_values. The first window's map is built once, with any
+# population_plot() arguments passed through `...`; its population layer is
+# then swapped for every window's tiles, so the basemap, roads and colour
+# scale stay fixed across frames. Returns the animation invisibly, and saves
+# it as a GIF when `filename` is given.
+
 #' Title
 #'
 #' @param metric
@@ -74,6 +82,7 @@ population_plot_animate <- function(
     ...
   )
   
+  # The population layer is the only one whose data has ds and hour columns
   population_layer <- which(
     vapply(
       p$layers,
