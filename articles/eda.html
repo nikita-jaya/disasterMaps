@@ -112,11 +112,11 @@
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998068809509 seconds</code></pre>
+<pre><code>Waiting 14.9996848106384 seconds</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in value[[3L]](cond): Could not download highway data from
-OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
+OpenStreetMap: HTTP 502 Bad Gateway.</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -138,7 +138,11 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998626708984 seconds</code></pre>
+<pre><code>Waiting 14.9997749328613 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in value[[3L]](cond): Could not download highway data from
+OpenStreetMap: HTTP 502 Bad Gateway.</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -152,7 +156,7 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <section class="level3"><h3 id="population-map-1">Population Map<a class="anchor" aria-label="anchor" href="#population-map-1"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_crisis.html">population_plot_n_crisis</a></span><span class="op">(</span>plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             plot_hour <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_hour"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             lon_limits <span class="op">=</span> <span class="va">lon_limits</span>,</span>
@@ -162,11 +166,7 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.999856710434 seconds</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): Could not download highway data from
-OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
+<pre><code>Waiting 14.9997856616974 seconds</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -188,7 +188,11 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998421669006 seconds</code></pre>
+<pre><code>Waiting 14.9997198581696 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in value[[3L]](cond): Could not download highway data from
+OpenStreetMap: HTTP 502 Bad Gateway.</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -202,7 +206,7 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <section class="level3"><h3 id="earthquakes">Earthquakes<a class="anchor" aria-label="anchor" href="#earthquakes"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># start and end dates for earthquakes, which can be adjusted</span></span>
 <span><span class="va">start_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"first_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
 <span><span class="va">end_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
@@ -226,7 +230,7 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 </section><section class="level3"><h3 id="fires">Fires<a class="anchor" aria-label="anchor" href="#fires"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># start and end dates for fires, which can be adjusted</span></span>
 <span><span class="va">start_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"first_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">7</span></span>
 <span><span class="va">end_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
@@ -243,11 +247,7 @@ OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
 <span>                             end_date <span class="op">=</span> <span class="va">end_date</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998621940613 seconds</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): Could not download highway data from
-OpenStreetMap: HTTP 504 Gateway Timeout.</code></pre>
+<pre><code>Waiting 14.9997179508209 seconds</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Downloading wildfire perimeters from WFIGS...</code></pre>

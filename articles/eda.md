@@ -48,10 +48,10 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9998068809509 seconds
+    Waiting 14.9996848106384 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 504 Gateway Timeout.
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-2-1.png)
 
@@ -69,7 +69,10 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9998626708984 seconds
+    Waiting 14.9997749328613 seconds
+
+    Warning in value[[3L]](cond): Could not download highway data from
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-3-1.png)
 
@@ -89,10 +92,7 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              )
 ```
 
-    Waiting 14.999856710434 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 504 Gateway Timeout.
+    Waiting 14.9997856616974 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-4-1.png)
 
@@ -110,7 +110,10 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 )
 ```
 
-    Waiting 14.9998421669006 seconds
+    Waiting 14.9997198581696 seconds
+
+    Warning in value[[3L]](cond): Could not download highway data from
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-5-1.png)
 
@@ -162,10 +165,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9998621940613 seconds
-
-    Warning in value[[3L]](cond): Could not download highway data from
-    OpenStreetMap: HTTP 504 Gateway Timeout.
+    Waiting 14.9997179508209 seconds
 
     Downloading wildfire perimeters from WFIGS...
 
