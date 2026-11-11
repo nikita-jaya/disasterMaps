@@ -47,7 +47,7 @@ make_pop_data <- function() {
   rbind(w1, w2)
 }
 
-# The plotting-ready object build_tiles() produces: sf polygons in EPSG:3857
+# The plotting-ready object load_population() produces: sf polygons in EPSG:3857
 # with the two user-facing column renames.
 make_tiles_3857 <- function(pop = make_pop_data(), half_width = 0.2) {
   polys <- lapply(seq_len(nrow(pop)), function(k) {
