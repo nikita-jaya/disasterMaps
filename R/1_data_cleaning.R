@@ -21,9 +21,8 @@
 #' @param county_group_cols
 #'
 #' @returns
-#' @export
-#'
-#' @examples
+#' @keywords internal
+#' @noRd
 aggregate_csvs <- function(path_parts,
                            output_name = "aggregated.csv",
                            dedupe = TRUE,
@@ -92,7 +91,8 @@ aggregate_csvs <- function(path_parts,
 
 # Quick health check of a data frame. Returns a list with the share of NAs
 # per column, the mean and sd of every numeric column (ignoring NAs), and the
-# number of rows and columns.
+# number of rows and columns. An sf (such as load_population()'s result) is
+# checked without its geometry column.
 
 #' Title
 #'
@@ -103,6 +103,7 @@ aggregate_csvs <- function(path_parts,
 #'
 #' @examples
 analyze_dataset <- function(df) {
+  if (inherits(df, "sf")) df <- sf::st_drop_geometry(df)
   list(
     missing = df |>
       summarise(across(everything(), ~mean(is.na(.)))),
@@ -245,9 +246,8 @@ tile_cache_dir <- "maptiles_cache"
 #' @param max_tiles
 #'
 #' @returns
-#' @export
-#'
-#' @examples
+#' @keywords internal
+#' @noRd
 fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
   dlon <- abs(diff(range(lon))); dlat <- abs(diff(range(lat)))
   z <- zoom
@@ -277,9 +277,8 @@ fit_zoom <- function(lon, lat, zoom, max_tiles = 250) {
 #' @param tzone
 #'
 #' @returns
-#' @export
-#'
-#' @examples
+#' @keywords internal
+#' @noRd
 format_time <- function(ds, hour, tzone) {
   datetime <- ymd_hm(
     paste(ds, hour),

@@ -5,12 +5,9 @@ template:
 reference:
 - title: Data Cleaning
   contents:
-  - aggregate_csvs
-  - analyze_dataset
   - load_population
   - load_movement
-  - fit_zoom
-  - format_time
+  - analyze_dataset
   - compute_windows
 
 - title: Plot Functions

@@ -29,7 +29,7 @@ attach(w)
 
 lon_limits <- range(tiles_3857$longitude)
 lat_limits <- range(tiles_3857$latitude)
-zoom <- fit_zoom(lon_limits, lat_limits, zoom = 10)
+zoom <- 10 # lowered automatically if the extent is too wide
 
 # OpenStreetMap roads drawn on top: "none", "major", "secondary" or "all"
 highway_detail <- "major"

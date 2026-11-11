@@ -37,7 +37,7 @@ shared_limits <- function(col, symmetric = FALSE,
 # `tiles_3857`, returned as a ggplot. `metric` picks the fill: change from
 # baseline, users during the crisis, or z-score. When lon_limits and
 # lat_limits are given, the map is cropped to them and gets a CartoDB basemap
-# and, optionally, OpenStreetMap roads (`highway_detail`). `disaster_type`
+# (at `zoom`, lowered by fit_zoom() for wide extents) and, optionally, OpenStreetMap roads (`highway_detail`). `disaster_type`
 # overlays fire perimeters or earthquake epicentres for start_date..end_date.
 # `labels` (sf points in EPSG:3857 with a `label` column) adds arrowed city
 # labels, angled per city with `label_angles`.
@@ -203,7 +203,9 @@ population_plot <- function(
       crs = 4326
     )
     
-    # Download OpenStreetMap / CartoDB basemap
+    # Download OpenStreetMap / CartoDB basemap, lowering the zoom first if the
+    # extent would need too many tiles
+    zoom <- fit_zoom(lon_limits, lat_limits, zoom)
     osm <- get_tiles(
       pts_sf,
       provider = "CartoDB.Voyager",
