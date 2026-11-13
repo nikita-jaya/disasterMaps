@@ -1,72 +1,60 @@
-# Range of column `col` across two time windows, so maps of both windows can
-# share one colour scale. Only tiles inside lon_limits / lat_limits count.
-# With symmetric = TRUE the range is centred on zero (c(-m, m)), which suits
-# diverging scales. Returns NULL if the column is missing or has no finite
-# values. Reads the globals `tiles_3857`, `lon_limits` and `lat_limits`, and
-# by default the window globals that attach(compute_windows(...)) creates.
-
-#' Title
-#'
-#' @param col
-#' @param symmetric
-#' @param ds1
-#' @param hour1
-#' @param ds2
-#' @param hour2
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-shared_limits <- function(col, symmetric = FALSE,
-                          ds1 = first_ds, hour1 = first_hour,
-                          ds2 = latest_ds, hour2 = latest_hour) {
+shared_limits <- function(
+    col,
+    symmetric = FALSE,
+    ds1 = first_ds,
+    hour1 = first_hour,
+    ds2 = latest_ds,
+    hour2 = latest_hour,
+    lon_limits_use = NULL,
+    lat_limits_use = NULL
+) {
   if (!col %in% names(tiles_3857)) return(NULL)
-  v <- tiles_3857 |>
-    dplyr::filter((ds == ds1 & hour == hour1) | (ds == ds2 & hour == hour2),
-                  dplyr::between(longitude, lon_limits[1], lon_limits[2]),
-                  dplyr::between(latitude,  lat_limits[1], lat_limits[2])) |>
+  
+  d <- tiles_3857 |>
+    dplyr::filter(
+      (ds == ds1 & hour == hour1) |
+        (ds == ds2 & hour == hour2)
+    )
+  
+  if (!is.null(lon_limits_use)) {
+    d <- d |>
+      dplyr::filter(
+        dplyr::between(
+          longitude,
+          lon_limits_use[1],
+          lon_limits_use[2]
+        )
+      )
+  }
+  
+  if (!is.null(lat_limits_use)) {
+    d <- d |>
+      dplyr::filter(
+        dplyr::between(
+          latitude,
+          lat_limits_use[1],
+          lat_limits_use[2]
+        )
+      )
+  }
+  
+  v <- d |>
     dplyr::pull(.data[[col]])
+  
   v <- v[is.finite(v)]
+  
   if (!length(v)) return(NULL)
+  
   r <- range(v, na.rm = TRUE)
-  if (symmetric) { m <- max(abs(r)); c(-m, m) } else r
+  
+  if (symmetric) {
+    m <- max(abs(r))
+    c(-m, m)
+  } else {
+    r
+  }
 }
 
-# Map of one population time window (plot_ds + plot_hour) from the global
-# `tiles_3857`, returned as a ggplot. `metric` picks the fill: change from
-# baseline, users during the crisis, or z-score. When lon_limits and
-# lat_limits are given, the map is cropped to them and gets a CartoDB basemap
-# (at `zoom`, lowered by fit_zoom() for wide extents) and, optionally, OpenStreetMap roads (`highway_detail`). `disaster_type`
-# overlays fire perimeters or earthquake epicentres for start_date..end_date.
-# `labels` (sf points in EPSG:3857 with a `label` column) adds arrowed city
-# labels, angled per city with `label_angles`.
-
-#' Title
-#'
-#' @param plot_ds
-#' @param plot_hour
-#' @param tzone
-#' @param metric
-#' @param title
-#' @param plot_title
-#' @param lon_limits
-#' @param lat_limits
-#' @param zoom
-#' @param fill_limits
-#' @param labels
-#' @param label_angles
-#' @param highway_detail
-#' @param disaster_type
-#' @param disaster_limits
-#' @param start_date
-#' @param end_date
-#' @param min_magnitude
-#'
-#' @returns
-#' @export
-#'
-#' @examples
 population_plot <- function(
     plot_ds,
     plot_hour,
@@ -81,18 +69,16 @@ population_plot <- function(
     labels = NULL,
     label_angles = NULL,
     highway_detail = c("none", "major", "secondary", "all"),
-    disaster_type = NULL, # "fire", "earthquake"
+    disaster_type = NULL, # "fire", "earthquake", "flood", "hurricane"
     disaster_limits = NULL,
-    start_date = NULL,    # disaster query window (fire / earthquake)
-    end_date = NULL,
-    min_magnitude = 2.5   # earthquakes only
+    disaster_config = NULL
 ) {
   
   metric <- match.arg(metric)
   highway_detail <- match.arg(highway_detail)
   # If using match.arg inside, handle NULL safely like this:
   if (!is.null(disaster_type)) {
-    disaster_type <- match.arg(disaster_type, c("fire", "earthquake"))
+    disaster_type <- match.arg(disaster_type, c("fire", "earthquake", "flood", "hurricane"))
   }
   # ------------------------------------------------------------
   # Select coloured column
@@ -112,8 +98,8 @@ population_plot <- function(
   if (metric == "zscore" && !("z_score" %in% names(tiles_3857))) {
     stop(
       "population_plot(metric='zscore'): column `z_score` not in tiles_3857. ",
-      "Rebuild with load_population(re_run = TRUE); if still missing, ",
-      "quadkey_df_to_polygon dropped it - join z_score back from the raw CSVs by quadkey."
+      "Rebuild with build_tiles(fb_data_bing, re_run = TRUE); if still missing, ",
+      "quadkey_df_to_polygon dropped it - join z_score back from fb_data_bing by quadkey."
     )
   }
   
@@ -203,15 +189,45 @@ population_plot <- function(
       crs = 4326
     )
     
-    # Download OpenStreetMap / CartoDB basemap, lowering the zoom first if the
-    # extent would need too many tiles
-    zoom <- fit_zoom(lon_limits, lat_limits, zoom)
-    osm <- get_tiles(
-      pts_sf,
-      provider = "CartoDB.Voyager",
+    # Download OpenStreetMap / CartoDB basemap
+    plot_zoom <- if (exists("fit_zoom", mode = "function")) {
+      fit_zoom(lon_limits, lat_limits, zoom)
+    } else {
+      zoom
+    }
+    
+    carto_key <- Sys.getenv("CARTO_API_KEY")
+    
+    carto_provider <- if (
+      nzchar(carto_key) &&
+      exists("create_provider", where = asNamespace("maptiles"), inherits = FALSE)
+    ) {
+      maptiles::create_provider(
+        name = "CARTO.VoyagerNoLabels",
+        url = paste0(
+          "https://{s}.basemaps.cartocdn.com/rastertiles/",
+          "voyager_nolabels/{z}/{x}/{y}{r}.png?key=",
+          carto_key
+        ),
+        sub = c("a", "b", "c", "d"),
+        citation = "© OpenStreetMap contributors © CARTO"
+      )
+    } else {
+      "CartoDB.VoyagerNoLabels"
+    }
+    
+    tile_args <- list(
+      x = pts_sf,
+      provider = carto_provider,
       crop = TRUE,
-      zoom = zoom
+      zoom = plot_zoom
     )
+    
+    if (exists("tile_cache_dir", inherits = TRUE)) {
+      tile_args$cachedir <- get("tile_cache_dir", inherits = TRUE)
+    }
+    
+    osm <- do.call(maptiles::get_tiles, tile_args)
     
     # ----------------------------------------------------------
     # Convert bounding box to EPSG:3857
@@ -383,23 +399,38 @@ population_plot <- function(
   fill_scale <- if (metric == "difference") {
     
     ggplot2::scale_fill_gradient2(
-      low = "blue",
-      mid = "grey",
-      high = "red",
-      limits = lims,
+      low = "darkred",
+      mid = "white",
+      high = "darkgreen",
+      limits = c(-1000, 1000),
+      breaks = c(-1000, -500, 0, 500, 1000),
+      labels = scales::label_comma(),
       midpoint = 0,
-      name = "Users (crisis - baseline)"
+      oob = scales::squish,
+      name = "Users (crisis - baseline)",
+      guide = ggplot2::guide_colorbar(
+        direction = "horizontal",
+        order = 2,
+        title.position = "top",
+        position = "bottom"
+      )
     )
     
   } else if (metric == "crisis") {
     
     ggplot2::scale_fill_gradient(
       trans = "log10",
-      low = "blue",
-      high = "red",
+      low = "darkred",
+      high = "darkblue",
       limits = lims,
       labels = scales::label_comma(),
-      name = "Users"
+      name = "Users",
+      guide = ggplot2::guide_colorbar(
+        direction = "horizontal",
+        order = 1,
+        title.position = "top",
+        position = "bottom"
+      )
     )
     
   } else {
@@ -411,7 +442,13 @@ population_plot <- function(
       limits = c(-4, 4),
       oob = scales::squish,
       na.value = "grey60",
-      name = "z-score (crisis vs. baseline)"
+      name = "z-score (crisis vs. baseline)",
+      guide = ggplot2::guide_colorbar(
+        direction = "horizontal",
+        order = 1,
+        title.position = "top",
+        position = "bottom"
+      )
     )
   }
   
@@ -439,6 +476,17 @@ population_plot <- function(
       linewidth = 0.1,
       alpha = 1
     )
+  
+  
+  # ------------------------------------------------------------
+  # Apply population fill scale NOW, before hurricane layers.
+  #
+  # The hurricane helper starts a second fill scale with
+  # ggnewscale::new_scale_fill() for Saffir-Simpson markers.
+  # ------------------------------------------------------------
+  p1 <- p1 +
+    fill_scale
+  
   # ------------------------------------------------------------
   # Disaster-specific layer
   #
@@ -447,16 +495,17 @@ population_plot <- function(
   
   
   if (!is.null(disaster_type)) {
-
-    p1 <- switch(
-      disaster_type,
-      fire = add_fire_layer(
-        p1, start_date, end_date, lon_limits, lat_limits
-      ),
-      earthquake = add_earthquake_layer(
-        p1, lon_limits, lat_limits, start_date, end_date,
-        min_magnitude, disaster_limits, xlim, ylim
-      )
+    
+    disaster_file <- paste0("3_", disaster_type, "_functions.R")
+    eda_file <- here::here("EDA_Code", disaster_file)
+    
+    if (file.exists(eda_file)) {
+      disaster_file <- eda_file
+    }
+    
+    source(
+      disaster_file,
+      local = environment()
     )
   }
   
@@ -507,8 +556,6 @@ population_plot <- function(
   # ------------------------------------------------------------
   
   p1 <- p1 +
-    fill_scale +
-    
     ggplot2::coord_sf(
       crs = sf::st_crs(3857),
       xlim = xlim,
@@ -518,20 +565,12 @@ population_plot <- function(
   
   # ------------------------------------------------------------
   # Legends
+  #
+  # Disaster-specific legend styling is handled by the relevant
+  # 3_*_functions.R script. In particular, hurricane path legends
+  # must preserve both colour and linetype so the forecast key stays
+  # dashed rather than being recreated as a colour-only solid line.
   # ------------------------------------------------------------
-  
-  p1 <- p1 +
-    ggplot2::guides(
-      fill = ggplot2::guide_colorbar(
-        direction = "horizontal",
-        order = 1,
-        title.position = "top"
-      ),
-      color = ggplot2::guide_legend(
-        direction = "horizontal",
-        order = 2
-      )
-    )
   
   # ------------------------------------------------------------
   # City labels and arrows
@@ -642,7 +681,7 @@ population_plot <- function(
       fill = "white",
       size = 4,
       fontface = "bold",
-      linewidth = 0.3,
+      label.size = 0.3,
       inherit.aes = FALSE
     )
   }
@@ -678,20 +717,8 @@ population_plot <- function(
   }
 }
 
-# Change-from-baseline map: population_plot(metric = "difference") with a
-# clean theme (no axes) and the legend along the bottom. Any other
-# population_plot() argument can be passed through `...`.
-
-#' Title
-#'
-#' @param plot_ds
-#' @param plot_hour
-#' @param ...
-#'
-#' @returns
-#' @export
-#'
-#' @examples
+# Thin wrappers preserve the original call sites / API (#6). The ~250 lines of
+# duplicated body are now the single implementation above.
 population_plot_n_difference <- function(plot_ds, plot_hour, ...) {
   population_plot(plot_ds, plot_hour, metric = "difference", ...) +
     theme_minimal() +
@@ -706,19 +733,6 @@ population_plot_n_difference <- function(plot_ds, plot_hour, ...) {
     )
 }
 
-# Users-during-crisis map: population_plot(metric = "crisis") with the same
-# theme as population_plot_n_difference().
-
-#' Title
-#'
-#' @param plot_ds
-#' @param plot_hour
-#' @param ...
-#'
-#' @returns
-#' @export
-#'
-#' @examples
 population_plot_n_crisis <- function(plot_ds, plot_hour, ...) {
   population_plot(plot_ds, plot_hour, metric = "crisis", ...) +
     theme_minimal() +
