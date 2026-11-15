@@ -48,7 +48,7 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997203350067 seconds
+    Waiting 14.999724149704 seconds
 
     Warning in value[[3L]](cond): Could not download highway data from
     OpenStreetMap: HTTP 502 Bad Gateway.
@@ -69,7 +69,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997787475586 seconds
+    Waiting 14.9997496604919 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-3-1.png)
 
@@ -89,7 +89,10 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              )
 ```
 
-    Waiting 14.9997932910919 seconds
+    Waiting 14.9997780323029 seconds
+
+    Warning in value[[3L]](cond): Could not download highway data from
+    OpenStreetMap: HTTP 502 Bad Gateway.
 
 ![](eda_files/figure-html/unnamed-chunk-4-1.png)
 
@@ -107,7 +110,7 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
 )
 ```
 
-    Waiting 14.9997665882111 seconds
+    Waiting 14.9997425079346 seconds
 
 ![](eda_files/figure-html/unnamed-chunk-5-1.png)
 
@@ -159,7 +162,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              )
 ```
 
-    Waiting 14.9997828006744 seconds
+    Waiting 14.9997954368591 seconds
 
     Downloading wildfire perimeters from WFIGS...
 
