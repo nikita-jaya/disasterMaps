@@ -395,6 +395,7 @@ population_plot <- function(
   # ------------------------------------------------------------
   # Fill scale
   # ------------------------------------------------------------
+
   
   fill_scale <- if (metric == "difference") {
     
@@ -699,7 +700,8 @@ population_plot <- function(
           format_time(
             plot_ds,
             plot_hour,
-            tzone = tzone
+            tzone = tzone,
+            source_tz = data_tz
           )
         )
       

@@ -1,3 +1,4 @@
+
 # ==============================================================================
 # EVENT CONFIG
 # ==============================================================================
@@ -12,9 +13,10 @@ event_path <- do.call(
   as.list(event_dir)
 )
 
-tzone <- "America/Chicago"
-data_tz <- "America/Chicago"
-re_run_cleaning <- FALSE
+data_tz <- "America/Los_Angeles"
+tzone   <- "America/Chicago"
+re_run_cleaning <- TRUE
+
 
 storm_name <- "Isaias"
 storm_id <- "AL092026"
@@ -27,9 +29,9 @@ event_mid_ds <- "2026-10-10"
 event_mid_hour <- "1600"
 
 statewide_path_ds <- "2026-10-10"
-statewide_path_hour <- "0800"
+statewide_path_hour <- "0000"
 
-event_end_ds <- "2026-10-14"
+event_end_ds <- "2026-10-21"
 event_end_hour <- "1600"
 
 # Map extents
