@@ -12,15 +12,18 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
     gifski,
+    maps,
     quarto,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
 Imports: 
     dplyr,
+    elevatr,
     gganimate,
     ggplot2 (>= 3.5.0),
     ggspatial,
+    grid,
     here,
     lubridate,
     maptiles,
@@ -31,6 +34,7 @@ Imports:
     scales,
     sf,
     stats,
+    terra,
     tidyselect,
     utils
 Depends: 
