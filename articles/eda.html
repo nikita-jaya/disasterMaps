@@ -112,7 +112,11 @@
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9997563362122 seconds</code></pre>
+<pre><code>Waiting 14.9997234344482 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in value[[3L]](cond): Could not download highway data from
+OpenStreetMap: HTTP 502 Bad Gateway.</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -124,7 +128,7 @@
 </section><section class="level3"><h3 id="displacement-map">Displacement Map<a class="anchor" aria-label="anchor" href="#displacement-map"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_difference.html">population_plot_n_difference</a></span><span class="op">(</span>plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"first_ds"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             plot_hour <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"first_hour"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             lon_limits <span class="op">=</span> <span class="va">lon_limits</span>,</span>
@@ -134,7 +138,11 @@
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998252391815 seconds</code></pre>
+<pre><code>Waiting 14.9997932910919 seconds</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in value[[3L]](cond): Could not download highway data from
+OpenStreetMap: HTTP 502 Bad Gateway.</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -148,7 +156,7 @@
 <section class="level3"><h3 id="population-map-1">Population Map<a class="anchor" aria-label="anchor" href="#population-map-1"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_crisis.html">population_plot_n_crisis</a></span><span class="op">(</span>plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             plot_hour <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_hour"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             lon_limits <span class="op">=</span> <span class="va">lon_limits</span>,</span>
@@ -158,7 +166,7 @@
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998226165771 seconds</code></pre>
+<pre><code>Waiting 14.9998071193695 seconds</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -170,7 +178,7 @@
 </section><section class="level3"><h3 id="displacement">Displacement<a class="anchor" aria-label="anchor" href="#displacement"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/population_plot_n_difference.html">population_plot_n_difference</a></span><span class="op">(</span>plot_ds <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             plot_hour <span class="op">=</span> <span class="va">w</span><span class="op">[[</span><span class="st">"latest_hour"</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>                             lon_limits <span class="op">=</span> <span class="va">lon_limits</span>,</span>
@@ -180,7 +188,7 @@
 <span>                             highway_detail <span class="op">=</span> <span class="va">highway_detail</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9998044967651 seconds</code></pre>
+<pre><code>Waiting 14.9998009204865 seconds</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
@@ -194,7 +202,7 @@
 <section class="level3"><h3 id="earthquakes">Earthquakes<a class="anchor" aria-label="anchor" href="#earthquakes"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># start and end dates for earthquakes, which can be adjusted</span></span>
 <span><span class="va">start_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"first_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
 <span><span class="va">end_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
@@ -218,7 +226,7 @@
 </section><section class="level3"><h3 id="fires">Fires<a class="anchor" aria-label="anchor" href="#fires"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># start and end dates for fires, which can be adjusted</span></span>
 <span><span class="va">start_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"first_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">7</span></span>
 <span><span class="va">end_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">w</span><span class="op">[[</span><span class="st">"latest_ds"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span></span>
@@ -235,7 +243,7 @@
 <span>                             end_date <span class="op">=</span> <span class="va">end_date</span></span>
 <span>                             <span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Waiting 14.9997868537903 seconds</code></pre>
+<pre><code>Waiting 14.9998199939728 seconds</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Downloading wildfire perimeters from WFIGS...</code></pre>
@@ -264,7 +272,7 @@
 <section class="level3"><h3 id="population-animation">Population Animation<a class="anchor" aria-label="anchor" href="#population-animation"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">crisis_animation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/population_plot_animate.html">population_plot_animate</a></span><span class="op">(</span></span>
 <span>  metric <span class="op">=</span> <span class="st">"crisis"</span>,</span>
 <span>  tzone <span class="op">=</span> <span class="va">tzone</span>,</span>
@@ -276,7 +284,7 @@
 <div class="cell-output cell-output-stderr">
 <pre><code>`nframes` and `fps` adjusted to match transition</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">crisis_animation</span></span></code></pre></div>
 <div class="cell-output-display">
 <div>
@@ -288,7 +296,7 @@
 </section><section class="level3"><h3 id="population-animation-1">Population Animation<a class="anchor" aria-label="anchor" href="#population-animation-1"></a>
 </h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">difference_animation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/population_plot_animate.html">population_plot_animate</a></span><span class="op">(</span></span>
 <span>  metric <span class="op">=</span> <span class="st">"difference"</span>,</span>
 <span>  tzone <span class="op">=</span> <span class="va">tzone</span>,</span>
@@ -300,7 +308,7 @@
 <div class="cell-output cell-output-stderr">
 <pre><code>`nframes` and `fps` adjusted to match transition</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">difference_animation</span></span></code></pre></div>
 <div class="cell-output-display">
 <div>
