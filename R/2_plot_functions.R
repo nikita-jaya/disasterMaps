@@ -37,8 +37,12 @@ shared_limits <- function(col, symmetric = FALSE,
 # `tiles_3857`, returned as a ggplot. `metric` picks the fill: change from
 # baseline, users during the crisis, or z-score. When lon_limits and
 # lat_limits are given, the map is cropped to them and gets a CartoDB basemap
-# (at `zoom`, lowered by fit_zoom() for wide extents) and, optionally, OpenStreetMap roads (`highway_detail`). `disaster_type`
-# overlays fire perimeters or earthquake epicentres for start_date..end_date.
+# (at `zoom`, lowered by fit_zoom() for wide extents) and, optionally,
+# OpenStreetMap roads (`highway_detail`), rivers (`river_detail`),
+# shaded-relief terrain (`show_terrain`, drawn under slightly see-through
+# population tiles) and U.S. state borders (`show_state_borders`).
+# `disaster_type` overlays fire perimeters or earthquake epicentres for
+# start_date..end_date.
 # `labels` (sf points in EPSG:3857 with a `label` column) adds arrowed city
 # labels, angled per city with `label_angles`.
 
@@ -57,6 +61,9 @@ shared_limits <- function(col, symmetric = FALSE,
 #' @param labels
 #' @param label_angles
 #' @param highway_detail
+#' @param river_detail
+#' @param show_terrain
+#' @param show_state_borders
 #' @param disaster_type
 #' @param disaster_limits
 #' @param start_date
@@ -81,6 +88,9 @@ population_plot <- function(
     labels = NULL,
     label_angles = NULL,
     highway_detail = c("none", "major", "secondary", "all"),
+    river_detail = c("none", "major", "all"),
+    show_terrain = FALSE,
+    show_state_borders = FALSE,
     disaster_type = NULL, # "fire", "earthquake"
     disaster_limits = NULL,
     start_date = NULL,    # disaster query window (fire / earthquake)
@@ -90,6 +100,7 @@ population_plot <- function(
   
   metric <- match.arg(metric)
   highway_detail <- match.arg(highway_detail)
+  river_detail <- match.arg(river_detail)
   # If using match.arg inside, handle NULL safely like this:
   if (!is.null(disaster_type)) {
     disaster_type <- match.arg(disaster_type, c("fire", "earthquake"))
@@ -321,44 +332,22 @@ population_plot <- function(
       )
     )
     
-    # Query OpenStreetMap
-    highway_query <- osmdata::opq(
-      bbox = map_bbox
-    ) |>
-      osmdata::add_osm_feature(
-        key = "highway",
-        value = highway_classes
-      )
-    
-    highway_sf <- tryCatch(
-      
-      osmdata::osmdata_sf(
-        highway_query
-      )$osm_lines,
-      
-      error = function(e) {
-        warning(
-          "Could not download highway data from OpenStreetMap: ",
-          conditionMessage(e)
-        )
-        NULL
-      }
+    # Query OpenStreetMap, failing over between Overpass servers and
+    # caching the result for this session. Returns NULL (with a message)
+    # if every server fails. Result is already in EPSG:3857.
+    highway_sf <- osm_lines_cached(
+      map_bbox,
+      key = "highway",
+      values = highway_classes,
+      tag = paste0("roads_", highway_detail),
+      cache_dir = tempdir()
     )
-    
-    # ----------------------------------------------------------
-    # Transform highways to Web Mercator
-    # ----------------------------------------------------------
-    
+
     if (
       !is.null(highway_sf) &&
       nrow(highway_sf) > 0
     ) {
-      
-      highway_sf <- sf::st_transform(
-        highway_sf,
-        3857
-      )
-      
+
       # Remove empty geometries
       highway_sf <- highway_sf[
         !sf::st_is_empty(highway_sf),
@@ -367,7 +356,28 @@ population_plot <- function(
       ]
     }
   }
-  
+
+  # ------------------------------------------------------------
+  # River layer
+  # ------------------------------------------------------------
+
+  river_sf <- NULL
+
+  if (
+    river_detail != "none" &&
+    !is.null(map_bbox)
+  ) {
+
+    # Major: rivers only. All: rivers and streams
+    river_sf <- osm_lines_cached(
+      map_bbox,
+      key = "waterway",
+      values = if (river_detail == "all") c("river", "stream") else "river",
+      tag = paste0("water_", river_detail),
+      cache_dir = tempdir()
+    )
+  }
+
   # ------------------------------------------------------------
   # Shared-scale override
   # ------------------------------------------------------------
@@ -423,11 +433,50 @@ population_plot <- function(
   
   # Basemap
   if (!is.null(osm)) {
-    
+
     p1 <- p1 +
       layer_spatial(osm)
   }
-  
+
+  # ------------------------------------------------------------
+  # Terrain
+  #
+  # Shaded relief between the basemap and the population tiles. The
+  # tiles are made slightly see-through below so the relief shows.
+  # ------------------------------------------------------------
+
+  terrain <- NULL
+
+  if (show_terrain && !is.null(map_bbox)) {
+
+    terrain <- tryCatch(
+      terrain_hillshade(map_bbox, zoom = zoom, cache_dir = tempdir()),
+      error = function(e) {
+        warning("Could not build terrain: ", conditionMessage(e))
+        NULL
+      }
+    )
+  }
+
+  if (!is.null(terrain)) {
+
+    p1 <- p1 +
+      ggplot2::geom_raster(
+        data = terrain$shade_df,
+        ggplot2::aes(
+          x = x,
+          y = y,
+          alpha = shade
+        ),
+        fill = "grey15",
+        inherit.aes = FALSE
+      ) +
+      ggplot2::scale_alpha_continuous(
+        range = c(0.03, 0.5),
+        guide = "none"
+      )
+  }
+
   # Population polygons
   p1 <- p1 +
     ggplot2::geom_sf(
@@ -435,9 +484,9 @@ population_plot <- function(
       ggplot2::aes(
         fill = .data[[fill_col]]
       ),
-      color = "white",
-      linewidth = 0.1,
-      alpha = 1
+      color = if (is.null(terrain)) "white" else "grey85",
+      linewidth = if (is.null(terrain)) 0.1 else 0.05,
+      alpha = if (is.null(terrain)) 1 else 0.82
     )
   # ------------------------------------------------------------
   # Disaster-specific layer
@@ -460,6 +509,69 @@ population_plot <- function(
     )
   }
   
+  # ------------------------------------------------------------
+  # State borders
+  #
+  # Added AFTER population polygons so borders appear on top.
+  # ------------------------------------------------------------
+
+  if (show_state_borders && !is.null(map_bbox)) {
+
+    border_sf <- state_borders(map_bbox)
+
+    if (!is.null(border_sf) && nrow(border_sf) > 0) {
+      p1 <- p1 +
+        ggplot2::geom_sf(
+          data = border_sf,
+          color = "grey15",
+          linewidth = 0.45,
+          alpha = 0.9,
+          inherit.aes = FALSE,
+          show.legend = FALSE
+        )
+    }
+  }
+
+  # ------------------------------------------------------------
+  # River layer
+  #
+  # Added AFTER population polygons so rivers appear on top, but
+  # before highways so roads cross over them.
+  # ------------------------------------------------------------
+
+  if (
+    !is.null(river_sf) &&
+    nrow(river_sf) > 0
+  ) {
+
+    rivers <- river_sf[river_sf$waterway == "river", , drop = FALSE]
+    streams <- river_sf[river_sf$waterway == "stream", , drop = FALSE]
+
+    if (nrow(rivers) > 0) {
+      p1 <- p1 +
+        ggplot2::geom_sf(
+          data = rivers,
+          color = "dodgerblue3",
+          linewidth = 0.3,
+          alpha = 0.55,
+          inherit.aes = FALSE,
+          show.legend = FALSE
+        )
+    }
+
+    if (nrow(streams) > 0) {
+      p1 <- p1 +
+        ggplot2::geom_sf(
+          data = streams,
+          color = "deepskyblue3",
+          linewidth = 0.12,
+          alpha = 0.45,
+          inherit.aes = FALSE,
+          show.legend = FALSE
+        )
+    }
+  }
+
   # ------------------------------------------------------------
   # Highway layer
   #
@@ -589,7 +701,13 @@ population_plot <- function(
     # Arrow/label distance
     # ----------------------------------------------------------
     
-    arrow_length <- 80000
+    # 15% of the map's height, so labels stay on small maps; 80 km when
+    # the map has no limits
+    arrow_length <- if (!is.null(ylim)) {
+      0.15 * unname(diff(ylim))
+    } else {
+      80000
+    }
     
     # Degrees -> radians
     angle_rad <- label_xy$angle * pi / 180
@@ -676,6 +794,250 @@ population_plot <- function(
     
     p1
   }
+}
+
+# Downloads OpenStreetMap line features (e.g. roads, rivers) with `key` equal
+# to any of `values` inside map_bbox, and returns them as an sf in EPSG:3857
+# with only the `key` column. Used by population_plot(highway_detail = ,
+# river_detail = ). `map_bbox` is a named lon/lat vector
+# c(xmin = , ymin = , xmax = , ymax = ) in EPSG:4326. Results are cached in
+# cache_dir as "<tag>_<bbox>.rds". Tries three Overpass servers in turn
+# (three rounds); returns NULL, with a message, if none of them responds.
+# Returns NULL straight away when map_bbox is NULL.
+
+#' Title
+#'
+#' @param map_bbox
+#' @param key
+#' @param values
+#' @param tag
+#' @param cache_dir
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+osm_lines_cached <- function(map_bbox, key, values, tag, cache_dir) {
+  if (is.null(map_bbox)) return(NULL)
+
+  # ------------------------------------------------------------
+  # Cache
+  # ------------------------------------------------------------
+
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+
+  bb_tag <- paste(round(unname(map_bbox), 2), collapse = "_")
+  f <- file.path(cache_dir, paste0(tag, "_", bb_tag, ".rds"))
+
+  if (file.exists(f)) return(readRDS(f))
+
+
+  # ------------------------------------------------------------
+  # Download, failing over between Overpass servers
+  # ------------------------------------------------------------
+
+  servers <- c(
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter"
+  )
+
+  out <- NULL
+
+  for (srv in rep(servers, 3)) {
+    if (!is.null(out)) break
+
+    message("Downloading OSM ", tag, " from ",
+            sub("https://([^/]+)/.*", "\\1", srv), " ...")
+
+    res <- tryCatch({
+      osmdata::set_overpass_url(srv)
+
+      q <- osmdata::opq(bbox = unname(map_bbox), timeout = 180) |>
+        osmdata::add_osm_feature(key = key, value = values)
+
+      x <- osmdata::osmdata_sf(q)$osm_lines
+
+      if (is.null(x) || nrow(x) == 0) {
+        "empty"
+      } else {
+        sf::st_transform(x[, key, drop = FALSE], 3857)
+      }
+    }, error = function(e) {
+      message("   failed: ", substr(conditionMessage(e), 1, 120))
+      NULL
+    })
+
+    if (inherits(res, "sf")) { out <- res; break }
+    if (identical(res, "empty")) message("   server returned 0 features")
+
+    Sys.sleep(3)
+  }
+
+
+  # ------------------------------------------------------------
+  # Save
+  # ------------------------------------------------------------
+
+  if (is.null(out)) {
+    message("*** ", tag, " could NOT be downloaded; layer omitted. Re-run later.")
+  } else {
+    saveRDS(out, f)
+  }
+
+  out
+}
+
+
+# Shaded relief for population_plot(show_terrain = TRUE). `map_bbox` is a
+# named lon/lat vector c(xmin = , ymin = , xmax = , ymax = ) in EPSG:4326.
+# Elevation is downloaded once (AWS tiles at `zoom`, via elevatr) and cached
+# in cache_dir as a GeoTIFF, then reprojected to EPSG:3857 and hill-shaded
+# with the sun at shade_angle (degrees above the horizon) and shade_direction
+# (degrees from north). Large rasters are aggregated to about 200,000 cells to
+# keep plotting fast. Returns a list of `elevation` and `shade` (terra
+# rasters) and `shade_df` (x, y, shade data frame for geom_raster()), or NULL
+# when map_bbox is NULL.
+
+#' Title
+#'
+#' @param map_bbox
+#' @param zoom
+#' @param cache_dir
+#' @param shade_angle
+#' @param shade_direction
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+terrain_hillshade <- function(map_bbox, zoom, cache_dir,
+                              shade_angle = 40, shade_direction = 315) {
+  if (is.null(map_bbox)) return(NULL)
+
+  # ------------------------------------------------------------
+  # Elevation (downloaded once, then cached)
+  # ------------------------------------------------------------
+
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+
+  bb_tag <- paste(round(unname(map_bbox), 2), collapse = "_")
+  elevation_file <- file.path(cache_dir,
+                              paste0("elevation_z", zoom, "_", bb_tag, ".tif"))
+
+  if (!file.exists(elevation_file)) {
+    message("Downloading elevation (first time only) ...")
+
+    loc <- data.frame(
+      x = unname(c(map_bbox["xmin"], map_bbox["xmax"])),
+      y = unname(c(map_bbox["ymin"], map_bbox["ymax"]))
+    )
+
+    r0 <- terra::rast(
+      elevatr::get_elev_raster(loc, prj = 4326, z = zoom, src = "aws",
+                               clip = "bbox", verbose = FALSE)
+    )
+    names(r0) <- "elevation"
+    terra::writeRaster(r0, elevation_file, overwrite = TRUE)
+  }
+
+  elev <- terra::project(terra::rast(elevation_file), "EPSG:3857")
+  names(elev) <- "elevation"
+
+  # Keep plotting fast for large extents
+  if (terra::ncell(elev) > 2e5) {
+    elev <- terra::aggregate(elev, fact = ceiling(sqrt(terra::ncell(elev) / 2e5)))
+  }
+
+
+  # ------------------------------------------------------------
+  # Hillshade
+  # ------------------------------------------------------------
+
+  slope  <- terra::terrain(elev, v = "slope",  unit = "radians")
+  aspect <- terra::terrain(elev, v = "aspect", unit = "radians")
+  shade  <- terra::shade(slope, aspect, angle = shade_angle,
+                         direction = shade_direction)
+  names(shade) <- "shade"
+
+  list(
+    elevation = elev,
+    shade     = shade,
+    shade_df  = terra::as.data.frame(shade, xy = TRUE, na.rm = TRUE)
+  )
+}
+
+
+# Borders between U.S. states (from the `maps` package) as sf lines in
+# EPSG:3857, for population_plot(show_state_borders = TRUE). Cropped to
+# map_bbox (named lon/lat vector c(xmin = , ymin = , xmax = , ymax = )) when
+# it is given. Returns NULL with a warning if `maps` is not installed or the
+# borders cannot be built.
+
+#' Title
+#'
+#' @param map_bbox
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+state_borders <- function(map_bbox = NULL) {
+  if (!requireNamespace("maps", quietly = TRUE)) {
+    warning("Package `maps` is required for state borders; layer omitted.",
+            call. = FALSE)
+    return(NULL)
+  }
+
+  tryCatch({
+
+    # ------------------------------------------------------------
+    # Split the maps polylines into one linestring per segment
+    # ------------------------------------------------------------
+
+    states_map <- maps::map("state", plot = FALSE, fill = FALSE,
+                            boundary = FALSE, interior = TRUE)
+
+    xy <- data.frame(x = states_map$x, y = states_map$y)
+
+    # NA rows separate the segments
+    separator  <- is.na(xy$x) | is.na(xy$y)
+    segment_id <- cumsum(separator)
+    xy         <- xy[!separator, , drop = FALSE]
+    segment_id <- segment_id[!separator]
+
+    split_xy <- split(xy, segment_id)
+    split_xy <- split_xy[vapply(split_xy, nrow, integer(1)) >= 2]
+
+    state_lines <- sf::st_sfc(
+      lapply(split_xy, function(d) {
+        sf::st_linestring(as.matrix(d[, c("x", "y"), drop = FALSE]))
+      }),
+      crs = 4326
+    )
+
+    states_sf <- sf::st_sf(geometry = state_lines)
+
+
+    # ------------------------------------------------------------
+    # Crop in lon/lat first, then reproject for plotting
+    # ------------------------------------------------------------
+
+    if (!is.null(map_bbox)) {
+      crop_box <- sf::st_bbox(
+        c(xmin = unname(map_bbox["xmin"]), ymin = unname(map_bbox["ymin"]),
+          xmax = unname(map_bbox["xmax"]), ymax = unname(map_bbox["ymax"])),
+        crs = sf::st_crs(4326)
+      )
+      states_sf <- suppressWarnings(sf::st_crop(states_sf, crop_box))
+    }
+
+    sf::st_transform(states_sf, 3857)
+  }, error = function(e) {
+    warning("State borders could not be built: ", conditionMessage(e),
+            call. = FALSE)
+    NULL
+  })
 }
 
 # Change-from-baseline map: population_plot(metric = "difference") with a

@@ -30,9 +30,6 @@ attach(w)
 lon_limits <- range(tiles_3857$longitude)
 lat_limits <- range(tiles_3857$latitude)
 zoom <- 10 # lowered automatically if the extent is too wide
-
-# OpenStreetMap roads drawn on top: "none", "major", "secondary" or "all"
-highway_detail <- "major"
 ```
 
 
@@ -46,8 +43,7 @@ population_plot_n_crisis(plot_ds = w[["first_ds"]],
                              lon_limits = lon_limits,
                              lat_limits = lat_limits,
                              zoom = zoom,
-                             tzone = tzone,
-                             highway_detail = highway_detail
+                             tzone = tzone
                              )
 
 ```
@@ -60,8 +56,7 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              lon_limits = lon_limits,
                              lat_limits = lat_limits,
                              zoom = zoom,
-                             tzone = tzone,
-                             highway_detail = highway_detail
+                             tzone = tzone
                              )
 
 ```
@@ -76,8 +71,7 @@ population_plot_n_crisis(plot_ds = w[["latest_ds"]],
                              lon_limits = lon_limits,
                              lat_limits = lat_limits,
                              zoom = zoom,
-                             tzone = tzone,
-                             highway_detail = highway_detail
+                             tzone = tzone
                              )
 
 ```
@@ -90,8 +84,7 @@ population_plot_n_difference(plot_ds = w[["latest_ds"]],
                              lon_limits = lon_limits,
                              lat_limits = lat_limits,
                              zoom = zoom,
-                             tzone = tzone,
-                             highway_detail = highway_detail
+                             tzone = tzone
 )
 
 ```
@@ -115,7 +108,6 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              lat_limits = lat_limits,
                              zoom = zoom,
                              tzone = tzone,
-                             highway_detail = highway_detail,
                              disaster_type = "earthquake",
                              start_date = start_date,
                              end_date = end_date,
@@ -138,7 +130,6 @@ population_plot_n_difference(plot_ds = w[["first_ds"]],
                              lat_limits = lat_limits,
                              zoom = zoom,
                              tzone = tzone,
-                             highway_detail = highway_detail,
                              disaster_type = "fire",
                              start_date = start_date,
                              end_date = end_date

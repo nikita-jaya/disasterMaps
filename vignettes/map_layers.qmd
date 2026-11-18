@@ -17,7 +17,6 @@ knitr:
 library(disasterMaps)
 
 tzone <- "America/Los_Angeles"
-cache_dir <- tempdir()
 ```
 
 ## Data
@@ -29,18 +28,13 @@ cache_dir <- tempdir()
 #| label: load-data
 #| warning: false
 data_dir <- system.file("extdata", "fire", "population", package = "disasterMaps")
-tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = cache_dir)
+tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = tempdir())
 
 w <- compute_windows(tiles_3857, tzone)
 
 lon_limits <- range(tiles_3857$longitude)
 lat_limits <- range(tiles_3857$latitude)
 zoom <- 10
-
-map_bbox <- c(
-  xmin = lon_limits[1], ymin = lat_limits[1],
-  xmax = lon_limits[2], ymax = lat_limits[2]
-)
 ```
 
 ## Population map
@@ -57,6 +51,34 @@ p1 <- population_plot(
 p1
 ```
 
+## Highways
+
+
+
+
+```{r}
+#| label: highways
+population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
+  highway_detail = "major"
+)
+```
+
+## Rivers
+
+
+
+
+```{r}
+#| label: rivers
+population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
+  river_detail = "major"
+)
+```
+
 ## Terrain
 
 
@@ -64,34 +86,11 @@ p1
 
 ```{r}
 #| label: terrain
-terrain <- terrain_hillshade(map_bbox, zoom = 9, cache_dir = cache_dir)
-terrain$elevation
-head(terrain$shade_df)
-```
-
-## Rivers and roads
-
-
-
-
-```{r}
-#| label: rivers
-rivers <- osm_lines_cached(
-  map_bbox, key = "waterway", values = "river",
-  tag = "water_major", cache_dir = cache_dir
+population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
+  show_terrain = TRUE
 )
-rivers
-```
-
-```{r}
-#| label: roads
-roads <- osm_lines_cached(
-  map_bbox, key = "highway",
-  values = c("motorway", "motorway_link", "trunk", "trunk_link",
-             "primary", "primary_link"),
-  tag = "roads_major", cache_dir = cache_dir
-)
-roads
 ```
 
 ## State borders
@@ -101,66 +100,28 @@ roads
 
 ```{r}
 #| label: state-borders
-borders <- state_borders(map_bbox)
-borders
+population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
+  show_state_borders = TRUE
+)
 ```
 
 ## City labels
 
-
-
-
 ```{r}
-#| label: cities
+#| label: city-labels
 cities <- data.frame(
-  place = "Map centre",
+  label = "Example City",
   lon = mean(lon_limits),
   lat = mean(lat_limits)
-)
+) |>
+  sf::st_as_sf(coords = c("lon", "lat"), crs = 4326) |>
+  sf::st_transform(3857)
 
-city_label_layers(p1, cities)
-```
-
-## All layers
-
-
-
-
-```{r}
-#| label: add-map-layers
-add_map_layers(
-  p1, map_bbox, osm = TRUE, pop_sf = tiles_3857,
-  config = list(
-    cache_dir = cache_dir,
-    rivers = "major",
-    roads = "major",
-    show_state_borders = TRUE,
-    cities = cities
-  )
-)
-```
-
-## Disaster layers
-
-
-
-
-```{r}
-#| label: hooks
-add_map_layers(
-  p1, map_bbox, osm = TRUE, pop_sf = tiles_3857,
-  config = list(cache_dir = cache_dir, cities = cities),
-  over_pop = function(p) {
-    p + ggplot2::geom_sf(
-      data = fetch_fires(
-        start_date = as.Date(w$first_ds) - 1,
-        end_date = as.Date(w$latest_ds) + 1,
-        lon_limits = lon_limits, lat_limits = lat_limits,
-        re_run = TRUE, cache_dir = cache_dir
-      ),
-      colour = "orange", fill = NA, linewidth = 0.5,
-      inherit.aes = FALSE
-    )
-  }
+population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom,
+  labels = cities
 )
 ```
