@@ -17,6 +17,14 @@ reference:
   - population_plot_n_difference
   - population_plot_n_crisis
 
+- title: Map Layers
+  contents:
+  - add_map_layers
+  - terrain_hillshade
+  - osm_lines_cached
+  - state_borders
+  - city_label_layers
+
 - title: Earthquake Functions
   contents:
   - fetch_earthquakes

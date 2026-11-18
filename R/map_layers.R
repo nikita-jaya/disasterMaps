@@ -1,38 +1,37 @@
-# ==============================================================================
-# 3_map_layers.R
+# Disaster-agnostic map context layers for population_plot(): shaded-relief
+# terrain, OpenStreetMap rivers and roads, U.S. state borders and city labels.
+# Nothing here knows about hurricanes, fires or earthquakes; disaster-specific
+# layers are added through add_map_layers()'s `under_pop` / `over_pop` hooks.
 #
-# Disaster-agnostic map context layers for population_plot():
-#   * cached shaded-relief terrain
-#   * cached OSM rivers and roads (Overpass failover)
-#   * U.S. state borders
-#   * city markers + pointer labels
-#   * add_map_layers(): one wrapper that stacks them in the right order
-#
-# Nothing here knows about hurricanes, fires or earthquakes. Disaster-specific
-# files (3_hurricane_functions.R, 3_fire_functions.R, ...) should source this
-# file and add only their own layers, using the `under_pop` / `over_pop` hooks.
-#
-# Layer order produced by add_map_layers():
-#   basemap -> terrain -> rivers -> [under_pop hook]
-#   -> POPULATION TILES -> state borders -> roads -> [over_pop hook] -> cities
-#
-# `map_bbox` is a named lon/lat vector c(xmin, ymin, xmax, ymax) in EPSG:4326.
-# ==============================================================================
+# Every `map_bbox` below is a named lon/lat vector
+# c(xmin = , ymin = , xmax = , ymax = ) in EPSG:4326.
 
-suppressPackageStartupMessages({
-  require(sf)
-  require(terra)
-  require(elevatr)
-  require(osmdata)
-  require(ggplot2)
-})
 
-# ------------------------------------------------------------------------------
-# Cached OSM line features (rivers, roads, ...)
-# ------------------------------------------------------------------------------
+# Downloads OpenStreetMap line features (e.g. rivers, roads) with `key` equal
+# to any of `values` inside map_bbox, and returns them as an sf in EPSG:3857
+# with only the `key` column. Results are cached in cache_dir as
+# "<tag>_<bbox>.rds". Tries three Overpass servers in turn (three rounds);
+# returns NULL, with a message, if none of them responds. Returns NULL straight
+# away when map_bbox is NULL.
 
+#' Title
+#'
+#' @param map_bbox
+#' @param key
+#' @param values
+#' @param tag
+#' @param cache_dir
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 osm_lines_cached <- function(map_bbox, key, values, tag, cache_dir) {
   if (is.null(map_bbox)) return(NULL)
+
+  # ------------------------------------------------------------
+  # Cache
+  # ------------------------------------------------------------
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -40,6 +39,11 @@ osm_lines_cached <- function(map_bbox, key, values, tag, cache_dir) {
   f <- file.path(cache_dir, paste0(tag, "_", bb_tag, ".rds"))
 
   if (file.exists(f)) return(readRDS(f))
+
+
+  # ------------------------------------------------------------
+  # Download, failing over between Overpass servers
+  # ------------------------------------------------------------
 
   servers <- c(
     "https://overpass-api.de/api/interpreter",
@@ -79,6 +83,11 @@ osm_lines_cached <- function(map_bbox, key, values, tag, cache_dir) {
     Sys.sleep(3)
   }
 
+
+  # ------------------------------------------------------------
+  # Save
+  # ------------------------------------------------------------
+
   if (is.null(out)) {
     message("*** ", tag, " could NOT be downloaded; layer omitted. Re-run later.")
   } else {
@@ -88,13 +97,34 @@ osm_lines_cached <- function(map_bbox, key, values, tag, cache_dir) {
   out
 }
 
-# ------------------------------------------------------------------------------
-# Shaded-relief terrain (elevation downloaded once, then cached as GeoTIFF)
-# ------------------------------------------------------------------------------
 
+# Shaded relief for map_bbox. Elevation is downloaded once (AWS tiles at
+# `zoom`, via elevatr) and cached in cache_dir as a GeoTIFF, then reprojected
+# to EPSG:3857 and hill-shaded with the sun at shade_angle (degrees above the
+# horizon) and shade_direction (degrees from north). Large rasters are
+# aggregated to about 200,000 cells to keep plotting fast. Returns a list of
+# `elevation` and `shade` (terra rasters) and `shade_df` (x, y, shade data
+# frame for geom_raster()), or NULL when map_bbox is NULL.
+
+#' Title
+#'
+#' @param map_bbox
+#' @param zoom
+#' @param cache_dir
+#' @param shade_angle
+#' @param shade_direction
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 terrain_hillshade <- function(map_bbox, zoom, cache_dir,
                               shade_angle = 40, shade_direction = 315) {
   if (is.null(map_bbox)) return(NULL)
+
+  # ------------------------------------------------------------
+  # Elevation (downloaded once, then cached)
+  # ------------------------------------------------------------
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -126,6 +156,11 @@ terrain_hillshade <- function(map_bbox, zoom, cache_dir,
     elev <- terra::aggregate(elev, fact = ceiling(sqrt(terra::ncell(elev) / 2e5)))
   }
 
+
+  # ------------------------------------------------------------
+  # Hillshade
+  # ------------------------------------------------------------
+
   slope  <- terra::terrain(elev, v = "slope",  unit = "radians")
   aspect <- terra::terrain(elev, v = "aspect", unit = "radians")
   shade  <- terra::shade(slope, aspect, angle = shade_angle,
@@ -139,10 +174,19 @@ terrain_hillshade <- function(map_bbox, zoom, cache_dir,
   )
 }
 
-# ------------------------------------------------------------------------------
-# U.S. state borders (needs the `maps` package)
-# ------------------------------------------------------------------------------
 
+# Borders between U.S. states (from the `maps` package) as sf lines in
+# EPSG:3857, cropped to map_bbox when it is given. Returns NULL with a warning
+# if `maps` is not installed or the borders cannot be built.
+
+#' Title
+#'
+#' @param map_bbox
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 state_borders <- function(map_bbox = NULL) {
   if (!requireNamespace("maps", quietly = TRUE)) {
     warning("Package `maps` is required for state borders; layer omitted.",
@@ -151,11 +195,17 @@ state_borders <- function(map_bbox = NULL) {
   }
 
   tryCatch({
+
+    # ------------------------------------------------------------
+    # Split the maps polylines into one linestring per segment
+    # ------------------------------------------------------------
+
     states_map <- maps::map("state", plot = FALSE, fill = FALSE,
                             boundary = FALSE, interior = TRUE)
 
     xy <- data.frame(x = states_map$x, y = states_map$y)
 
+    # NA rows separate the segments
     separator  <- is.na(xy$x) | is.na(xy$y)
     segment_id <- cumsum(separator)
     xy         <- xy[!separator, , drop = FALSE]
@@ -173,7 +223,11 @@ state_borders <- function(map_bbox = NULL) {
 
     states_sf <- sf::st_sf(geometry = state_lines)
 
+
+    # ------------------------------------------------------------
     # Crop in lon/lat first, then reproject for plotting
+    # ------------------------------------------------------------
+
     if (!is.null(map_bbox)) {
       crop_box <- sf::st_bbox(
         c(xmin = unname(map_bbox["xmin"]), ymin = unname(map_bbox["ymin"]),
@@ -191,15 +245,34 @@ state_borders <- function(map_bbox = NULL) {
   })
 }
 
-# ------------------------------------------------------------------------------
-# City pointer labels. `cities` needs: place, lon, lat
-# (optional: label_dx_m, label_dy_m = label offset in metres, EPSG:3857)
-# ------------------------------------------------------------------------------
 
+# Adds city markers and arrowed pointer labels to the map `p`. `cities` is a
+# data frame with columns place, lon and lat, and optionally label_dx_m and
+# label_dy_m: the label's offset from the city in metres (EPSG:3857), which
+# default to default_dx_m / default_dy_m. show_points = FALSE drops the
+# markers. Returns `p` unchanged when `cities` is NULL or empty.
+
+#' Title
+#'
+#' @param p
+#' @param cities
+#' @param default_dx_m
+#' @param default_dy_m
+#' @param show_points
+#' @param label_size
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 city_label_layers <- function(p, cities, default_dx_m = 25000,
                               default_dy_m = 20000, show_points = TRUE,
                               label_size = 3) {
   if (is.null(cities) || !nrow(cities)) return(p)
+
+  # ------------------------------------------------------------
+  # Check columns and fill in default offsets
+  # ------------------------------------------------------------
 
   missing_cols <- setdiff(c("place", "lon", "lat"), names(cities))
   if (length(missing_cols)) {
@@ -208,6 +281,11 @@ city_label_layers <- function(p, cities, default_dx_m = 25000,
 
   if (!"label_dx_m" %in% names(cities)) cities$label_dx_m <- default_dx_m
   if (!"label_dy_m" %in% names(cities)) cities$label_dy_m <- default_dy_m
+
+
+  # ------------------------------------------------------------
+  # City points and label positions in EPSG:3857
+  # ------------------------------------------------------------
 
   pts <- sf::st_as_sf(cities, coords = c("lon", "lat"), crs = 4326) |>
     sf::st_transform(3857)
@@ -218,6 +296,11 @@ city_label_layers <- function(p, cities, default_dx_m = 25000,
   lab$y <- xy[, 2]
   lab$label_x <- lab$x + lab$label_dx_m
   lab$label_y <- lab$y + lab$label_dy_m
+
+
+  # ------------------------------------------------------------
+  # Draw markers, arrows and labels
+  # ------------------------------------------------------------
 
   if (show_points) {
     p <- p + ggplot2::geom_sf(
@@ -242,26 +325,44 @@ city_label_layers <- function(p, cities, default_dx_m = 25000,
     )
 }
 
-# ------------------------------------------------------------------------------
-# One-call wrapper
-#
-# p1        ggplot whose LAST layer is the population polygons (as built by
-#           population_plot()).
-# under_pop function(p) -> p. Draws disaster layers BELOW the population tiles
-#           (e.g. forecast cone, flood extent).
-# over_pop  function(p) -> p. Draws disaster layers ABOVE tiles/roads but below
-#           city labels (e.g. storm track, fire perimeter, epicentre).
-#
-# config keys (all optional):
-#   cache_dir, terrain_zoom, shade_angle, shade_direction, shade_alpha,
-#   pop_alpha, roads ("major"/"secondary"/"none"), rivers ("major"/"all"/"none"),
-#   show_terrain, show_state_borders, state_border_colour,
-#   state_border_linewidth, cities, show_cities, show_city_points,
-#   city_label_size
-# ------------------------------------------------------------------------------
 
+# Adds all context layers to a population map in one call, in this order:
+#   basemap -> terrain -> rivers -> under_pop() -> population tiles
+#   -> state borders -> roads -> over_pop() -> cities
+# `p1` is a ggplot whose last layer is the population polygons, as built by
+# population_plot(). Pass `osm` (non-NULL) when p1's first layer is a basemap,
+# so terrain goes on top of it, and `pop_sf` (non-NULL) to lift the
+# population layer so context layers can go underneath it.
+# `under_pop` and `over_pop` are functions(p) returning p, for disaster
+# layers: under_pop draws below the population tiles (e.g. forecast cone,
+# flood extent), over_pop above tiles and roads but below city labels (e.g.
+# storm track, fire perimeter, epicentre).
+# `config` is a list of optional settings: cache_dir, terrain_zoom,
+# shade_angle, shade_direction, shade_alpha, pop_alpha, roads ("major",
+# "secondary" or "none"), rivers ("major", "all" or "none"), show_terrain,
+# show_state_borders, state_border_colour, state_border_linewidth, cities,
+# show_cities, show_city_points and city_label_size.
+
+#' Title
+#'
+#' @param p1
+#' @param map_bbox
+#' @param osm
+#' @param pop_sf
+#' @param config
+#' @param under_pop
+#' @param over_pop
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
                            config = list(), under_pop = NULL, over_pop = NULL) {
+
+  # ------------------------------------------------------------
+  # Settings
+  # ------------------------------------------------------------
 
   cfg <- function(name, default = NULL) {
     if (!is.null(config[[name]])) config[[name]] else default
@@ -277,7 +378,11 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
   rivers          <- cfg("rivers", "major")
   show_terrain    <- cfg("show_terrain", TRUE)
 
-  # -- Pull the population layer off the stack so context goes underneath ------
+
+  # ------------------------------------------------------------
+  # Pull the population layer off the stack so context goes underneath
+  # ------------------------------------------------------------
+
   pop_layer <- NULL
   if (!is.null(pop_sf) && length(p1$layers) > 0) {
     pop_layer <- p1$layers[[length(p1$layers)]]
@@ -287,7 +392,11 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
     p1$layers <- p1$layers[-length(p1$layers)]
   }
 
-  # -- Terrain (just above the basemap) ----------------------------------------
+
+  # ------------------------------------------------------------
+  # Terrain (just above the basemap)
+  # ------------------------------------------------------------
+
   if (!is.null(map_bbox) && show_terrain) {
     terrain <- tryCatch(
       terrain_hillshade(map_bbox, terrain_zoom, cache_dir,
@@ -312,7 +421,11 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
     }
   }
 
-  # -- Rivers ------------------------------------------------------------------
+
+  # ------------------------------------------------------------
+  # Rivers
+  # ------------------------------------------------------------
+
   if (!is.null(map_bbox) && rivers != "none") {
     water <- osm_lines_cached(
       map_bbox, key = "waterway",
@@ -338,7 +451,11 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
     }
   }
 
-  # -- Roads: downloaded now, drawn after the population tiles -----------------
+
+  # ------------------------------------------------------------
+  # Roads (downloaded now, drawn after the population tiles)
+  # ------------------------------------------------------------
+
   road_major_sf <- road_secondary_sf <- NULL
 
   if (!is.null(map_bbox) && roads != "none") {
@@ -360,15 +477,27 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
     }
   }
 
-  # -- Disaster layers that sit under the population tiles ---------------------
+
+  # ------------------------------------------------------------
+  # Disaster layers below the population tiles
+  # ------------------------------------------------------------
+
   if (is.function(under_pop)) p1 <- under_pop(p1)
 
-  # -- Restore population tiles ------------------------------------------------
+
+  # ------------------------------------------------------------
+  # Restore population tiles
+  # ------------------------------------------------------------
+
   if (!is.null(pop_layer)) {
     p1$layers <- append(p1$layers, list(pop_layer), after = length(p1$layers))
   }
 
-  # -- State borders -----------------------------------------------------------
+
+  # ------------------------------------------------------------
+  # State borders
+  # ------------------------------------------------------------
+
   if (isTRUE(cfg("show_state_borders", FALSE)) && !is.null(map_bbox)) {
     sb <- state_borders(map_bbox)
     if (!is.null(sb) && nrow(sb) > 0) {
@@ -380,7 +509,11 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
     }
   }
 
-  # -- Roads on top of tiles ---------------------------------------------------
+
+  # ------------------------------------------------------------
+  # Roads on top of the population tiles
+  # ------------------------------------------------------------
+
   if (!is.null(road_major_sf) && nrow(road_major_sf) > 0) {
     p1 <- p1 + ggplot2::geom_sf(data = road_major_sf, colour = "black",
                                 linewidth = 0.45, alpha = 0.82,
@@ -392,10 +525,18 @@ add_map_layers <- function(p1, map_bbox, osm = NULL, pop_sf = NULL,
                                 inherit.aes = FALSE)
   }
 
-  # -- Disaster layers that sit above tiles/roads ------------------------------
+
+  # ------------------------------------------------------------
+  # Disaster layers above the tiles and roads
+  # ------------------------------------------------------------
+
   if (is.function(over_pop)) p1 <- over_pop(p1)
 
-  # -- City labels last --------------------------------------------------------
+
+  # ------------------------------------------------------------
+  # City labels last
+  # ------------------------------------------------------------
+
   if (isTRUE(cfg("show_cities", TRUE))) {
     p1 <- city_label_layers(
       p1, cities = cfg("cities", NULL),

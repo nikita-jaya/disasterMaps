@@ -1,0 +1,166 @@
+---
+title: "Map Layers"
+vignette: >
+  %\VignetteIndexEntry{Map Layers}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+    fig-width: 8
+    fig-height: 6
+---
+
+```{r}
+#| label: setup
+library(disasterMaps)
+
+tzone <- "America/Los_Angeles"
+cache_dir <- tempdir()
+```
+
+## Data
+
+
+
+
+```{r}
+#| label: load-data
+#| warning: false
+data_dir <- system.file("extdata", "fire", "population", package = "disasterMaps")
+tiles_3857 <- load_population(data_dir, re_run = TRUE, cache_dir = cache_dir)
+
+w <- compute_windows(tiles_3857, tzone)
+
+lon_limits <- range(tiles_3857$longitude)
+lat_limits <- range(tiles_3857$latitude)
+zoom <- 10
+
+map_bbox <- c(
+  xmin = lon_limits[1], ymin = lat_limits[1],
+  xmax = lon_limits[2], ymax = lat_limits[2]
+)
+```
+
+## Population map
+
+
+
+
+```{r}
+#| label: population-map
+p1 <- population_plot(
+  plot_ds = w$latest_ds, plot_hour = w$latest_hour, tzone = tzone,
+  lon_limits = lon_limits, lat_limits = lat_limits, zoom = zoom
+)
+p1
+```
+
+## Terrain
+
+
+
+
+```{r}
+#| label: terrain
+terrain <- terrain_hillshade(map_bbox, zoom = 9, cache_dir = cache_dir)
+terrain$elevation
+head(terrain$shade_df)
+```
+
+## Rivers and roads
+
+
+
+
+```{r}
+#| label: rivers
+rivers <- osm_lines_cached(
+  map_bbox, key = "waterway", values = "river",
+  tag = "water_major", cache_dir = cache_dir
+)
+rivers
+```
+
+```{r}
+#| label: roads
+roads <- osm_lines_cached(
+  map_bbox, key = "highway",
+  values = c("motorway", "motorway_link", "trunk", "trunk_link",
+             "primary", "primary_link"),
+  tag = "roads_major", cache_dir = cache_dir
+)
+roads
+```
+
+## State borders
+
+
+
+
+```{r}
+#| label: state-borders
+borders <- state_borders(map_bbox)
+borders
+```
+
+## City labels
+
+
+
+
+```{r}
+#| label: cities
+cities <- data.frame(
+  place = "Map centre",
+  lon = mean(lon_limits),
+  lat = mean(lat_limits)
+)
+
+city_label_layers(p1, cities)
+```
+
+## All layers
+
+
+
+
+```{r}
+#| label: add-map-layers
+add_map_layers(
+  p1, map_bbox, osm = TRUE, pop_sf = tiles_3857,
+  config = list(
+    cache_dir = cache_dir,
+    rivers = "major",
+    roads = "major",
+    show_state_borders = TRUE,
+    cities = cities
+  )
+)
+```
+
+## Disaster layers
+
+
+
+
+```{r}
+#| label: hooks
+add_map_layers(
+  p1, map_bbox, osm = TRUE, pop_sf = tiles_3857,
+  config = list(cache_dir = cache_dir, cities = cities),
+  over_pop = function(p) {
+    p + ggplot2::geom_sf(
+      data = fetch_fires(
+        start_date = as.Date(w$first_ds) - 1,
+        end_date = as.Date(w$latest_ds) + 1,
+        lon_limits = lon_limits, lat_limits = lat_limits,
+        re_run = TRUE, cache_dir = cache_dir
+      ),
+      colour = "orange", fill = NA, linewidth = 0.5,
+      inherit.aes = FALSE
+    )
+  }
+)
+```
